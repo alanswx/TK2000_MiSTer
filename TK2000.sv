@@ -208,24 +208,9 @@ localparam CONF_STR = {
 	"O2,TV Mode,NTSC,PAL;",
 	"O34,Noise,White,Red,Green,Blue;",
 	"-;",
-	"P1,Test Page 1;",
-	"P1-;",
-	"P1-, -= Options in page 1 =-;",
-	"P1-;",
-	"P1O5,Option 1-1,Off,On;",
-	"d0P1F1,BIN;",
-	"H0P1O6,Option 1-2,Off,On;",
+	"OA,Dis Rom,On,Off;",
 	"-;",
-	"P2,Test Page 2;",
-	"P2-;",
-	"P2-, -= Options in page 2 =-;",
-	"P2-;",
-	"P2S0,DSK;",
-	"P2O67,Option 2,1,2,3,4;",
-	"-;",
-	"-;",
-	"T0,Reset;",
-	"R0,Reset and close OSD;",
+	"R0,Reset;",
 	"V,v",`BUILD_DATE 
 };
 
@@ -247,12 +232,12 @@ hps_io #(.CONF_STR(CONF_STR),.PS2DIV(1000)) hps_io
 	.buttons(buttons),
 	.status(status),
 	.status_menumask({status[5]}),
-			  .joystick_0(joy1),
-		  .joystick_1(joy2),
+	.joystick_0(joy1),
+	.joystick_1(joy2),
 
 	.ps2_key(ps2_key),
-        .ps2_kbd_clk_out    ( ps2_kbd_clk    ),
-        .ps2_kbd_data_out   ( ps2_kbd_data   )
+   .ps2_kbd_clk_out    ( ps2_kbd_clk    ),
+   .ps2_kbd_data_out   ( ps2_kbd_data   )
 );
 wire ps2_kbd_clk;
 wire ps2_kbd_data;
@@ -486,7 +471,7 @@ pll pll
     .read_write_o(per_we_s),
     .irq_n_i(1'b1),
     .nmi_n_i(1'b1),
-    .dis_rom_i(1'b1),
+    .dis_rom_i(~status[10]),
     // 1 enable peripheral
     .io_select_n_o(per_iosel_n_s),
     .dev_select_n_o(per_devsel_n_s),
