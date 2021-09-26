@@ -208,6 +208,8 @@ localparam CONF_STR = {
 	"O2,TV Mode,NTSC,PAL;",
 	"O34,Noise,White,Red,Green,Blue;",
 	"-;",
+	"S0,NIBDSKDO PO ;",
+	"H0F2,NIB,IOCTL NIB;",
 	"OA,Dis Rom,On,Off;",
 	"-;",
 	"R0,Reset;",
@@ -220,7 +222,28 @@ wire [31:0] status;
 wire [10:0] ps2_key;
 wire [31:0] joy1, joy2;
 
-hps_io #(.CONF_STR(CONF_STR),.PS2DIV(1000)) hps_io
+
+wire [31:0] sd_lba[1];
+reg   [1:0] sd_rd;
+reg   [1:0] sd_wr;
+wire  [1:0] sd_ack;
+wire  [8:0] sd_buff_addr;
+wire  [7:0] sd_buff_dout;
+wire  [7:0] sd_buff_din[1];
+wire        sd_buff_wr;
+wire  [1:0] img_mounted;
+wire        img_readonly;
+wire [63:0] img_size;
+
+
+wire        ioctl_download;
+wire        ioctl_wr;
+wire [24:0] ioctl_addr;
+wire  [7:0] ioctl_data;
+wire  [7:0] ioctl_index;
+
+
+hps_io #(.CONF_STR(CONF_STR),.PS2DIV(1000),.VDNUM(1)) hps_io
 (
 	.clk_sys(clk_sys),
 	.HPS_BUS(HPS_BUS),
@@ -235,6 +258,25 @@ hps_io #(.CONF_STR(CONF_STR),.PS2DIV(1000)) hps_io
 	.joystick_0(joy1),
 	.joystick_1(joy2),
 
+	.sd_lba(sd_lba),
+	.sd_rd(sd_rd),
+	.sd_wr(sd_wr),
+	.sd_ack(sd_ack),
+	.sd_buff_addr(sd_buff_addr),
+	.sd_buff_dout(sd_buff_dout),
+	.sd_buff_din(sd_buff_din),
+	.sd_buff_wr(sd_buff_wr),
+	.img_mounted(img_mounted),
+	.img_readonly(img_readonly),
+	.img_size(img_size),
+
+	.ioctl_download(ioctl_download),
+	.ioctl_wr(ioctl_wr),
+	.ioctl_addr(ioctl_addr),
+	.ioctl_dout(ioctl_data),
+	.ioctl_index(ioctl_index),
+	
+	
 	.ps2_key(ps2_key),
    .ps2_kbd_clk_out    ( ps2_kbd_clk    ),
    .ps2_kbd_data_out   ( ps2_kbd_data   )
@@ -423,7 +465,8 @@ pll pll
 );
 */	 
     tk2000 tk2000 (
-      .clock_14_i(clock_14_s),
+    .clock_14_i(clock_14_s),
+    .CPU_WAIT(0/*cpu_wait_fdd*/),
     .reset_i(reset_s),
     // RAM
     .ram_addr_o(ram_addr_s),
@@ -564,30 +607,84 @@ pll pll
 	assign VGA_G	= video_g_s;
 	assign VGA_B	= video_b_s;	 
 	 
-	 
+
  disk_ii disk(
-      .CLK_14M(clock_14_s),
+    .CLK_14M(clock_14_s),
     .CLK_2M(clock_2M_s),
     .PRE_PHASE_ZERO(phi0_s),
+	 
     .IO_SELECT(~per_iosel_n_s),
     .DEVICE_SELECT(~per_devsel_n_s),
+	 
     .RESET(reset_s),
     .A(per_addr_s),
     .D_IN(per_data_to_s),
     .D_OUT(per_data_from_s),
+	 
+	 
     .TRACK(track_num_s),
     .TRACK_ADDR(track_addr_s),
+	 
     .D1_ACTIVE(disk1_en_s),
     .D2_ACTIVE(disk2_en_s),
     .ram_write_addr(track_ram_addr_s),
     .ram_di(track_ram_data_s),
     .ram_we(track_ram_we_s),
+	 
     .step_sound_o(step_sound_s),
     //------------------------------------------------------------------------------
     .motor_phase_o(motor_phase_s),
     .drive_en_o(drive_en_s),
     .rd_pulse_o(rd_pulse_s));
 
+	 
+assign      sd_lba[0] = lba_fdd;
+wire  [5:0] track;
+reg   [3:0] track_sec;
+reg         cpu_wait_fdd = 0;
+reg  [31:0] lba_fdd;
+
+always @(posedge clk_sys) begin
+	reg       state = 0;
+	reg [5:0] cur_track;
+	reg       fdd_mounted = 0;
+	reg       old_ack = 0;
+	
+	old_ack <= sd_ack[0];
+	fdd_mounted <= fdd_mounted | img_mounted[0];
+	sd_wr[0] <= 0;
+
+	if(reset) begin
+		state <= 0;
+		cpu_wait_fdd <= 0;
+		sd_rd[0] <= 0;
+	end
+	else if(!state) begin
+		if((cur_track != track) || (fdd_mounted && ~img_mounted[0])) begin
+			cur_track <= track;
+			fdd_mounted <= 0;
+			if(img_size) begin
+				track_sec <= 0;
+				lba_fdd <= 13 * track;
+				state <= 1;
+				sd_rd[0] <= 1;
+				cpu_wait_fdd <= 1;
+			end
+		end
+	end
+	else begin
+		if(~old_ack & sd_ack[0]) begin
+			if(track_sec >= 12) sd_rd[0] <= 0;
+			lba_fdd <= lba_fdd + 1'd1;
+		end else if(old_ack & ~sd_ack[0]) begin
+			track_sec <= track_sec + 1'd1;
+			if(~sd_rd[0]) state <= 0;
+			cpu_wait_fdd <= 0;
+		end
+	end
+end
+	 
+	 
   assign joy2_right_i = motor_phase_s[3];
   assign joy2_left_i = motor_phase_s[2];
   assign joy2_down_i = motor_phase_s[1];
@@ -614,6 +711,23 @@ pll pll
     .track(track_num_s),
     .image(1'b0));
     
+dpram2 #(.addr_width_g(18),.data_width_g(8))
+address_table(
+	.clock_a(clk_sys),
+	.address_a(ioctl_addr[17:0]),
+	.data_a(ioctl_data), 
+	.wren_a(ioctl_wr ),
+	
+	// read from our line buffer and output to screen
+	.clock_b(clock_14_s),
+	.address_b(disk_addr_s[17:0]),
+	.q_b(disk_data_s)
+);
+
+
+
+  
+
 
         // Track Number overlay for the green channel
   osd_track #(
@@ -954,11 +1068,11 @@ pll pll
         tmds_o(0)   <= tdms_n_s(3); -- CLK- 
 */
         
-  assign sram_addr_o = pump_active_s == 1'b1 ? sram_addr_s : disk_addr_s;
-  assign sram_data_io = pump_active_s == 1'b1 ? sram_data_s : {8{1'bZ}};
-  assign disk_data_s = sram_data_io;
-  assign sram_oe_n_o = 1'b0;
-  assign sram_we_n_o = sram_we_s;
+ // assign sram_addr_o = pump_active_s == 1'b1 ? sram_addr_s : disk_addr_s;
+ // assign sram_data_io = pump_active_s == 1'b1 ? sram_data_s : {8{1'bZ}};
+ // assign disk_data_s = sram_data_io;
+ // assign sram_oe_n_o = 1'b0;
+ // assign sram_we_n_o = sram_we_s;
 
 /*  assign VGA_R = vga_r_s;
   assign VGA_G = vga_g_s;
