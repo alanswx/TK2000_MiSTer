@@ -101,6 +101,8 @@ entity vga_controller is
     
 		vga_hs_n_o		: out std_logic;             -- Active low
 		vga_vs_n_o		: out std_logic;             -- Active low
+		VGA_HBL    : out std_logic;
+		VGA_VBL    : out std_logic;
 		vga_blank_n_o	: out std_logic;
 		vga_r_o			: out std_logic_vector(7 downto 0);
 		vga_g_o			: out std_logic_vector(7 downto 0);
@@ -374,7 +376,7 @@ begin
 						when others      => r_v := X"00"; g_v := X"00"; b_v := X"00"; color_index <= "0000";
 					end case;
 
-				end if;
+				end if;	
 
 			end if;
 			
@@ -393,5 +395,7 @@ begin
 	ram_data_out_s <= data_out_s(0);
 
 	vga_blank_n_o	<= video_active_s;
+VGA_VBL <= vbl_delayed_s;
+VGA_HBL <= hbl_delayed_s;
 
 end rtl;

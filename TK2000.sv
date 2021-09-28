@@ -475,7 +475,6 @@ pll pll
 */	 
     tk2000 tk2000 (
     .clock_14_i(clock_14_s),
-    .CPU_WAIT(0/*cpu_wait_fdd*/),
     .reset_i(reset_s),
     // RAM
     .ram_addr_o(ram_addr_s),
