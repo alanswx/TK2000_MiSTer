@@ -211,6 +211,7 @@ localparam CONF_STR = {
 	"S0,NIBDSKDO PO ;",
 	"H0F2,NIB,IOCTL NIB;",
 	"OA,Dis Rom,On,Off;",
+	"OB,Color Mode,On,Off;",
 	"-;",
 	"R0,Reset;",
 	"V,v",`BUILD_DATE 
@@ -311,6 +312,7 @@ wire [7:0] video;
 
 assign CLK_VIDEO = clk_sys;
 
+/*
 reg ce_pix;
 always @(posedge clk_sys) begin
         reg [1:0] div;
@@ -318,7 +320,14 @@ always @(posedge clk_sys) begin
         div <= div + 1'd1;
 	ce_pix <= div == 0;
 end
+*/
+reg ce_pix;
+always @(posedge clk_sys) begin
+        reg div;
 
+        div <= ~div ;
+	ce_pix <= div == 0;
+end
 assign CE_PIXEL = ce_pix;
 /*
 assign VGA_DE = ~(HBlank | VBlank);
@@ -444,7 +453,7 @@ wire [9:0] tdms_r_s;
 wire [9:0] tdms_g_s;
 wire [9:0] tdms_b_s;
 wire [3:0] tdms_p_s;
-wire [3:0] tdms_n_s;  // SDISKII
+wire [3:0] tdms_n_s;  // SDISKIIhttps://github.com/MiSTer-devel/Distribution_MiSTer/blob/main/.github/update_distribution.sh
 wire [3:0] motor_phase_s ;
 wire drive_en_s;
 wire rd_pulse_s;
@@ -466,6 +475,7 @@ pll pll
 */	 
     tk2000 tk2000 (
     .clock_14_i(clock_14_s),
+    .CPU_WAIT(0/*cpu_wait_fdd*/),
     .reset_i(reset_s),
     // RAM
     .ram_addr_o(ram_addr_s),
@@ -583,28 +593,31 @@ pll pll
 
   // VGA
   vga_controller vga(
-      .clock_28_i(clock_28_s),
+    .clock_28_i(clock_28_s),
     .video_i(video_bit_s),
     .color_i(video_color_s),
     .hbl_i(video_hbl_s),
     .vbl_i(video_vbl_s),
     .ld194_i(video_ld194_s),
-    .color_type_i(1'b1),
+    .color_type_i(~status[11]),
     .vga_hs_n_o(video_hsync_n_s),
     .vga_vs_n_o(video_vsync_n_s),
     .vga_blank_n_o(video_blank_s),
+	 .VGA_HBL(HBlank),
+	 .VGA_VBL(VBlank),
+	 
     .vga_r_o(video_r_s),
     .vga_g_o(video_g_s),
     .vga_b_o(video_b_s),
     .vga_odd_line_o(odd_line_s),
     .color_index(color_index));
-
-	 
+	
 	assign VGA_HS	= video_hsync_n_s;
 	assign VGA_VS	= video_vsync_n_s;
 	assign VGA_R	= video_r_s;
 	assign VGA_G	= video_g_s;
 	assign VGA_B	= video_b_s;	 
+  assign VGA_DE = (video_blank_s);
 	 
 
  disk_ii disk(
@@ -1079,7 +1092,6 @@ address_table(
   assign VGA_HS = video_hsync_n_s;
   assign VGA_VS = video_vsync_n_s;
 */
-  assign VGA_DE = ~(video_hbl_s | video_vbl_s);
 
 
 endmodule
