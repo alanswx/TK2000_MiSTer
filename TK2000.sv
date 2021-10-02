@@ -288,7 +288,8 @@ wire ps2_kbd_data;
 
 ///////////////////////   CLOCKS   ///////////////////////////////
 
-wire clk_sys = clock_28_s;
+//wire clk_sys = clock_28_s;
+wire clk_sys = clock_14_s;
 pll pll
 (
 	.refclk(CLK_50M),
@@ -311,7 +312,7 @@ wire VSync;
 wire [7:0] video;
 
 
-assign CLK_VIDEO = clk_sys;
+assign CLK_VIDEO = clock_28_s;
 
 /*
 reg ce_pix;
@@ -595,7 +596,7 @@ wire rd_pulse_s;
 	assign VGA_B	= video_b_s;	 
   assign VGA_DE = (video_blank_s);
 
-`define diskinram
+//`define diskinram
   
 `ifdef diskinram
 
