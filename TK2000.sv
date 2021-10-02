@@ -214,6 +214,7 @@ localparam CONF_STR = {
 	"OB,Color Mode,On,Off;",
 	"-;",
 	"R0,Reset;",
+	"J,Fire 1,Fire 2;",
 	"V,v",`BUILD_DATE 
 };
 
@@ -224,13 +225,13 @@ wire [10:0] ps2_key;
 wire [31:0] joy1, joy2;
 
 
-wire [31:0] sd_lba[1];
+wire [31:0] sd_lba[2];
 reg   [1:0] sd_rd;
 reg   [1:0] sd_wr;
 wire  [1:0] sd_ack;
 wire  [8:0] sd_buff_addr;
 wire  [7:0] sd_buff_dout;
-wire  [7:0] sd_buff_din[1];
+wire  [7:0] sd_buff_din[2];
 wire        sd_buff_wr;
 wire  [1:0] img_mounted;
 wire        img_readonly;
@@ -244,7 +245,7 @@ wire  [7:0] ioctl_data;
 wire  [7:0] ioctl_index;
 
 
-hps_io #(.CONF_STR(CONF_STR),.PS2DIV(1000),.VDNUM(1)) hps_io
+hps_io #(.CONF_STR(CONF_STR),.PS2DIV(1000),.VDNUM(2)) hps_io
 (
 	.clk_sys(clk_sys),
 	.HPS_BUS(HPS_BUS),
@@ -453,7 +454,8 @@ wire [9:0] tdms_r_s;
 wire [9:0] tdms_g_s;
 wire [9:0] tdms_b_s;
 wire [3:0] tdms_p_s;
-wire [3:0] tdms_n_s;  // SDISKIIhttps://github.com/MiSTer-devel/Distribution_MiSTer/blob/main/.github/update_distribution.sh
+wire [3:0] tdms_n_s;  
+// SDISKII
 wire [3:0] motor_phase_s ;
 wire drive_en_s;
 wire rd_pulse_s;
@@ -461,21 +463,11 @@ wire rd_pulse_s;
 
 
 
-/*
- //-- TK2000details because these mixed colors 
-pll pll
-(
-	.refclk(CLK_50M),
-	.rst(0),
-	.outclk_0(clock_28_s),
-	.outclk_1(clock_14_s),
-	.outclk_2(clock_dvi_s),
-	.locked(pll_locked_s)
-);
-*/	 
+
     tk2000 tk2000 (
     .clock_14_i(clock_14_s),
     .reset_i(reset_s),
+    .CPU_WAIT(cpu_wait_fdd),
     // RAM
     .ram_addr_o(ram_addr_s),
     .ram_data_to_o(ram_data_to_s),
@@ -566,22 +558,7 @@ pll pll
   end
     
 
-  /*  
-    -- Audio
-    audioout: entity work.Audio_DAC
-    port map (
-        clock_i => clock_14_s,
-        reset_i => reset_s,
-        spk_i       => spk_s,
-        mic_i       => cas_o_s,
-        ear_i       => ear_i,
-        step_i   => step_sound_s and menu_status(3),
-        dac_r_o => AUDIO_R,
-        dac_l_o => AUDIO_L,
-        pcm_out_o => pcm_out_s
-    );
-	 */
-    
+
   // ROM
   tk2000_rom rom(
       .clock(clock_28_s),
@@ -617,7 +594,10 @@ pll pll
 	assign VGA_G	= video_g_s;
 	assign VGA_B	= video_b_s;	 
   assign VGA_DE = (video_blank_s);
-	 
+
+`define diskinram
+  
+`ifdef diskinram
 
  disk_ii disk(
     .CLK_14M(clock_14_s),
@@ -649,6 +629,85 @@ pll pll
     .rd_pulse_o(rd_pulse_s));
 
 	 
+	 
+
+  image_controller image_ctrl(
+      // System Interface -------------------------------------------------------
+    .CLK_14M(clock_14_s),
+    .reset(reset_s),
+    // SRAM Interface ---------------------------------------------------------
+    .buffer_addr_i(disk_addr_s),
+    .buffer_data_i(disk_data_s),
+    // Track buffer Interface -------------------------------------------------
+    .ram_write_addr(track_ram_addr_s[12:0]),
+    // out
+    .ram_di(track_ram_data_s),
+    // out
+    .ram_we(track_ram_we_s),
+    // out
+    .track(track_num_s),
+    .image(1'b0));
+
+
+//
+//Disk Buffer
+//
+//Hold entire disk image here - from ioctl
+//
+//
+    
+dpram2 #(.addr_width_g(18),.data_width_g(8))
+address_table(
+	.clock_a(clk_sys),
+	.address_a(ioctl_addr[17:0]),
+	.data_a(ioctl_data), 
+	.wren_a(ioctl_wr ),
+	
+	.clock_b(clock_14_s),
+	.address_b(disk_addr_s[17:0]),
+	.q_b(disk_data_s)
+);
+
+    
+`else
+
+
+
+ disk_ii disk(
+    .CLK_14M(clock_14_s),
+    .CLK_2M(clock_2M_s),
+    .PRE_PHASE_ZERO(phi0_s),
+	 
+    .IO_SELECT(~per_iosel_n_s),
+    .DEVICE_SELECT(~per_devsel_n_s),
+	 
+    .RESET(reset_s),
+    .A(per_addr_s),
+    .D_IN(per_data_to_s),
+    .D_OUT(per_data_from_s),
+	 
+	 
+    .TRACK(track),
+    .TRACK_ADDR(track_addr_s),
+	 
+    .D1_ACTIVE(disk1_en_s),
+    .D2_ACTIVE(disk2_en_s),
+    .ram_write_addr({track_sec, sd_buff_addr}),
+    .ram_di(sd_buff_dout),
+    .ram_we(sd_buff_wr & sd_ack[0]),
+	 
+    .step_sound_o(step_sound_s),
+    //------------------------------------------------------------------------------
+    .motor_phase_o(motor_phase_s),
+    .drive_en_o(drive_en_s),
+    .rd_pulse_o(rd_pulse_s));
+	 
+assign sd_buff_din[1] = 0;
+assign      sd_lba[1] = 0;
+assign      sd_rd[1] = 0;
+assign      sd_wr[1] = 0;
+	 
+assign sd_buff_din[0] = 0;
 assign      sd_lba[0] = lba_fdd;
 wire  [5:0] track;
 reg   [3:0] track_sec;
@@ -665,7 +724,7 @@ always @(posedge clk_sys) begin
 	fdd_mounted <= fdd_mounted | img_mounted[0];
 	sd_wr[0] <= 0;
 
-	if(reset) begin
+	if(reset_s) begin
 		state <= 0;
 		cpu_wait_fdd <= 0;
 		sd_rd[0] <= 0;
@@ -694,8 +753,17 @@ always @(posedge clk_sys) begin
 		end
 	end
 end
-	 
-	 
+
+`endif
+ 	 
+assign joy1_right_i  = joy1[0];
+assign joy1_left_i   = joy1[1];
+assign joy1_down_i   = joy1[2];
+assign joy1_up_i     = joy1[3];
+assign joy1_p6_i= joy1[4];
+assign joy1_p9_i= joy1[5];
+
+
   assign joy2_right_i = motor_phase_s[3];
   assign joy2_left_i = motor_phase_s[2];
   assign joy2_down_i = motor_phase_s[1];
@@ -704,75 +772,6 @@ end
 
  //--    joy2_p9_i    <= rd_pulse_s;
 
-
-  image_controller image_ctrl(
-      // System Interface -------------------------------------------------------
-    .CLK_14M(clock_14_s),
-    .reset(reset_s),
-    // SRAM Interface ---------------------------------------------------------
-    .buffer_addr_i(disk_addr_s),
-    .buffer_data_i(disk_data_s),
-    // Track buffer Interface -------------------------------------------------
-    .ram_write_addr(track_ram_addr_s[12:0]),
-    // out
-    .ram_di(track_ram_data_s),
-    // out
-    .ram_we(track_ram_we_s),
-    // out
-    .track(track_num_s),
-    .image(1'b0));
-    
-dpram2 #(.addr_width_g(18),.data_width_g(8))
-address_table(
-	.clock_a(clk_sys),
-	.address_a(ioctl_addr[17:0]),
-	.data_a(ioctl_data), 
-	.wren_a(ioctl_wr ),
-	
-	// read from our line buffer and output to screen
-	.clock_b(clock_14_s),
-	.address_b(disk_addr_s[17:0]),
-	.q_b(disk_data_s)
-);
-
-
-
-  
-
-
-        // Track Number overlay for the green channel
-  osd_track #(
-      .C_digits(2),
-    // number of hex digits to show
-    .C_resolution_x(565))
-  osd_inst(
-      .clk_pixel(clock_28_s),
-    .vsync(video_vsync_n_s),
-    // positive sync
-    .fetch_next(video_blank_s),
-    // '1' when video_active
-    .probe_in(3'b000),
-    .osd_out(osd_pixel_s));
-
-  assign osd_green_s = {5{osd_pixel_s & osd_visible_s}};
-  // OSD timer
-  always @(posedge clock_2M_s) begin
-    if(disk1_en_s == 1'b1 || disk1_en_s == 1'b1) begin
-      timer_osd_s <= {22{1'b1}};
-      osd_visible_s <= 1'b1;
-    end
-    else if(timer_osd_s > 0) begin
-      timer_osd_s <= timer_osd_s - 1;
-      osd_visible_s <= 1'b1;
-    end
-    else begin
-      osd_visible_s <= 1'b0;
-    end
-  end
-
-
-
-    
       
   assign scanlines_en_s = 2'b00;
     
@@ -820,277 +819,10 @@ address_table(
   assign ram_data = por_reset_s == 1'b0 ? ram_data_to_s : 8'b00000000;
   assign ram_addr = por_reset_s == 1'b0 ? ram_addr_s: 16'h3F4;//std_logic_vector(to_unsigned(1012,ram_addr'length)); -- $3F4
 
-/*
-  assign SDRAM_CLK =  ~clock_28_s;
-  assign SDRAM_CKE = 1'b1;
-  sdram sdram_inst(
-      .sd_data(SDRAM_DQ),
-    .sd_addr(SDRAM_A),
-    .sd_cs(SDRAM_nCS),
-    .sd_ba(SDRAM_BA),
-    .sd_we(SDRAM_nWE),
-    .sd_ras(SDRAM_nRAS),
-    .sd_cas(SDRAM_nCAS),
-    .clk(clock_28_s),
-    .clkref(~clock_2M_s),
-    .init(pll_locked_s),
-    .din(ram_data),
-    .addr(ram_addr),
-    .we(ram_we),
-    .dout(ram_data_from_s),
-    .aux(1'b0));
-  */  
+
     
   assign mic_o = cas_o_s;
 
   
-  wire [15:0] rgb_c[16] = '{16'h0000, 
-			  16'h9104,
-           16'h420A,
-           16'hD405,
-           16'h0604,
-           16'h8808,
-           16'h290E,
-           16'hBA0F,
-           16'h4500,
-           16'hD601,
-           16'h8808,
-           16'hF90B,
-           16'h2B01,
-           16'hBD05,
-           16'h6E0B,
-           16'hFF0F};
-
-  always @(posedge clock_28_s) begin : P1
-    reg [31:0] vga_col_v;
-    reg [15:0] vga_rgb_v;
-    reg [3:0] vga_r_v;
-    reg [3:0] vga_g_v;
-    reg [3:0] vga_b_v;
-
-    //vga_col_v = color_index;
-    vga_rgb_v = rgb_c[color_index];
-    if(scanlines_en_s == 2'b01) begin
-      //25% = 1/2 + 1/4
-      vga_r_s <= ({1'b0,vga_rgb_v[15:12]}) + ({2'b00,vga_rgb_v[15:13]});
-      vga_g_s <= ({1'b0,vga_rgb_v[11:8]}) + ({2'b00,vga_rgb_v[11:9]}) | osd_green_s;
-      vga_b_s <= ({1'b0,vga_rgb_v[3:0]}) + ({2'b00,vga_rgb_v[3:1]});
-    end
-    else if(scanlines_en_s == 2'b10) begin
-      // 50%
-      vga_r_s <= {1'b0,vga_rgb_v[15:12]};
-      vga_g_s <= {1'b0,vga_rgb_v[11:8]} | osd_green_s;
-      vga_b_s <= {1'b0,vga_rgb_v[3:0]};
-    end
-    else if(scanlines_en_s == 2'b11) begin
-      // 75%
-      vga_r_s <= {2'b00,vga_rgb_v[15:13]};
-      vga_g_s <= {2'b00,vga_rgb_v[11:9]} | osd_green_s;
-      vga_b_s <= {2'b00,vga_rgb_v[3:1]};
-    end
-    if(scanlines_en_s == 2'b00 || odd_line_s == 1'b0) begin
-      vga_r_s <= {vga_rgb_v[15:12],vga_rgb_v[12]};
-      vga_g_s <= {vga_rgb_v[11:8],vga_rgb_v[8]} | osd_green_s;
-      vga_b_s <= {vga_rgb_v[3:0],vga_rgb_v[0]};
-    end
-  end
-
-
-/*    
-        -- Index => RGB 
-    process (clock_28_s)
-        variable vga_col_v  : integer range 0 to 15;
-        variable vga_rgb_v  : std_logic_vector(15 downto 0);
-        variable vga_r_v        : std_logic_vector( 3 downto 0);
-        variable vga_g_v        : std_logic_vector( 3 downto 0);
-        variable vga_b_v        : std_logic_vector( 3 downto 0);
-        type ram_t is array (natural range 0 to 15) of std_logic_vector(15 downto 0);
-        constant rgb_c : ram_t := (
-        
-            -- Original Apple II palette
-        
-                --  0 - 0x00 00 00 - Black
-                --  1 - 0x90 17 40 - Red
-                --  2 - 0x40 2c a5 - Dark Blue
-                --  3 - 0xd0 43 e5 - Purple
-                --  4 - 0x00 69 40 - Dark Green
-                --  5 - 0x80 80 80 - Gray 1
-                --  6 - 0x2f 95 e5 - Medium Blue
-                --  7 - 0xbf ab ff - Light Blue
-                --  8 - 0x40 54 00 - Brown
-                --  9 - 0xd0 6a 1a - Orange
-                -- 10 - 0x80 80 80 - Gray 2 
-                -- 11 - 0xff 96 bf - Pink
-                -- 12 - 0x2f bc 1a - Light Green
-                -- 13 - 0xbf d3 5a - Yellow
-                -- 14 - 0x6f e8 bf - Aqua
-                -- 15 - 0xff ff ff - White
-                
-                        --      RG0B
-                0  => X"0000",
-                1  => X"9104",
-                2  => X"420A",
-                3  => X"D405",
-                4  => X"0604",
-                5  => X"8808",
-                6  => X"290E",
-                7  => X"BA0F",
-                8  => X"4500",
-                9  => X"D601",
-                10 => X"8808",
-                11 => X"F90B",
-                12 => X"2B01",
-                13 => X"BD05",
-                14 => X"6E0B",
-                15 => X"FF0F"
-
-                
-        );
-    begin
-        if rising_edge(clock_28_s) then
-            vga_col_v := to_integer(unsigned(color_index));
-            vga_rgb_v := rgb_c(vga_col_v);
-            
-            if scanlines_en_s = "01" then --25% = 1/2 + 1/4
-                    vga_r_s <= ('0' & (vga_rgb_v(15 downto 12))) + ("00" & (vga_rgb_v(15 downto 13)));
-                    vga_g_s <= ('0' & (vga_rgb_v(11 downto  8))) + ("00" & (vga_rgb_v(11 downto  9))) or osd_green_s;
-                    vga_b_s <= ('0' & (vga_rgb_v( 3 downto  0))) + ("00" & (vga_rgb_v( 3 downto  1)));
-
-            elsif scanlines_en_s = "10" then -- 50%
-                    vga_r_s <= '0' & vga_rgb_v(15 downto 12);
-                    vga_g_s <= '0' & vga_rgb_v(11 downto  8) or osd_green_s;
-                    vga_b_s <= '0' & vga_rgb_v( 3 downto  0);
-                    
-            elsif scanlines_en_s = "11" then -- 75%
-                    vga_r_s <= "00" & vga_rgb_v(15 downto 13);
-                    vga_g_s <= "00" & vga_rgb_v(11 downto  9) or osd_green_s;
-                    vga_b_s <= "00" & vga_rgb_v( 3 downto  1);
-            end if;
-            
-            if  scanlines_en_s = "00" or odd_line_s = '0' then 
-                    vga_r_s <= vga_rgb_v(15 downto 12) & vga_rgb_v(12);
-                    vga_g_s <= vga_rgb_v(11 downto  8) & vga_rgb_v(8) or osd_green_s;
-                    vga_b_s <= vga_rgb_v( 3 downto  0) & vga_rgb_v(0);
-            end if;
-        
-            
-            
-        end if;
-    end process;
-
-    
-     osd1 : osd 
-    generic map
-    (
-        STRLEN => CONF_STR'length,
-        OSD_COLOR => "001", -- RGB
-        OSD_X_OFFSET => "0000010010", -- 18
-        OSD_Y_OFFSET => "0000001111"  -- 15
-    )
-    port map
-    (
-        pclk        => clock_28_s,
-
-        -- spi for OSD
-        sdi        => SPI_DI,
-        sck        => SPI_SCK,
-        ss         => SPI_SS2,
-        sdo        => SPI_DO,
-        
-        red_in     => vga_r_s, --video_r_s(7 downto 3), --vga_r_s,
-        green_in   => vga_g_s, --video_g_s(7 downto 3), --vga_g_s,
-        blue_in    => vga_b_s, --video_b_s(7 downto 3), --vga_b_s,
-        hs_in      => video_hsync_n_s,
-        vs_in      => video_vsync_n_s,
-
-        red_out    => osd_r_s,
-        green_out  => osd_g_s,
-        blue_out   => osd_b_s,
-        hs_out     => VGA_HS,
-        vs_out     => VGA_VS,
-
-        data_in     => osd_s,
-        conf_str    => to_slv(CONF_STR),
-        menu_in     => '0',
-        status      => menu_status,
-        mc_ack      => mc_ack,
-        reset       => reset_s,
-        
-        pump_active_o   => pump_active_s,
-        sram_a_o        => sram_addr_s,
-        sram_d_o        => sram_data_s,
-        sram_we_n_o     => sram_we_s,
-        config_buffer_o => open
-    );
-    
-    sram_addr_o   <= sram_addr_s when pump_active_s = '1' else disk_addr_s;
-    sram_data_io  <= sram_data_s when pump_active_s = '1' else (others=>'Z');
-    disk_data_s   <= sram_data_io;
-   sram_oe_n_o   <= '0'; 
-    sram_we_n_o   <= sram_we_s;
-    
-
-        -- HDMI
-        hdmi: entity work.hdmi
-        generic map (
-            FREQ    => 28571429,    -- pixel clock frequency 
-            FS      => 48000,       -- audio sample rate - should be 32000, 41000 or 48000 = 48KHz
-            CTS => 28571,       -- CTS = Freq(pixclk) * N / (128 * Fs)
-            N       => 6144         -- N = 128 * Fs /1000,  128 * Fs /1500 <= N <= 128 * Fs /300 (Check HDMI spec 7.2 for details)
-        ) 
-        port map (
-            I_CLK_PIXEL     => clock_28_s,
-            I_R             => osd_r_s & osd_r_s(4 downto 2),
-            I_G             => osd_g_s & osd_g_s(4 downto 2),
-            I_B             => osd_b_s & osd_b_s(4 downto 2),
-            I_BLANK         => not video_blank_s,
-            I_HSYNC         => video_hsync_n_s,
-            I_VSYNC         => video_vsync_n_s,
-            -- PCM audio
-            I_AUDIO_ENABLE  => '1',
-            I_AUDIO_PCM_L   => "00" & pcm_out_s & "000000",
-            I_AUDIO_PCM_R   => "00" & pcm_out_s & "000000",
-            -- TMDS parallel pixel synchronous outputs (serialize LSB first)
-            O_RED               => tdms_r_s,
-            O_GREEN         => tdms_g_s,
-            O_BLUE          => tdms_b_s
-        );
-
-        hdmio: entity work.hdmi_out_altera
-        port map (
-            clock_pixel_i       => clock_28_s,
-            clock_tdms_i        => clock_dvi_s,
-            red_i                   => tdms_r_s,
-            green_i             => tdms_g_s,
-            blue_i              => tdms_b_s,
-            tmds_out_p          => tdms_p_s,
-            tmds_out_n          => tdms_n_s
-        );
-
-
-
-        tmds_o(7)   <= tdms_p_s(2); -- 2+       
-        tmds_o(6)   <= tdms_n_s(2); -- 2-       
-        tmds_o(5)   <= tdms_p_s(1); -- 1+           
-        tmds_o(4)   <= tdms_n_s(1); -- 1-       
-        tmds_o(3)   <= tdms_p_s(0); -- 0+       
-        tmds_o(2)   <= tdms_n_s(0); -- 0-   
-        tmds_o(1)   <= tdms_p_s(3); -- CLK+ 
-        tmds_o(0)   <= tdms_n_s(3); -- CLK- 
-*/
-        
- // assign sram_addr_o = pump_active_s == 1'b1 ? sram_addr_s : disk_addr_s;
- // assign sram_data_io = pump_active_s == 1'b1 ? sram_data_s : {8{1'bZ}};
- // assign disk_data_s = sram_data_io;
- // assign sram_oe_n_o = 1'b0;
- // assign sram_we_n_o = sram_we_s;
-
-/*  assign VGA_R = vga_r_s;
-  assign VGA_G = vga_g_s;
-  assign VGA_B = vga_b_s;
-  assign VGA_HS = video_hsync_n_s;
-  assign VGA_VS = video_vsync_n_s;
-*/
-
 
 endmodule

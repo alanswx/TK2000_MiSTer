@@ -57,6 +57,7 @@ entity tk2000 is
 	port (
 		clock_14_i			: in   std_logic								:= '0';
 		reset_i				: in   std_logic								:= '0';
+		CPU_WAIT       : in std_logic;
 		-- RAM da CPU
 		ram_addr_o			: out  std_logic_vector(15 downto 0)	:= (others => '0');
 		ram_data_to_o		: out  std_logic_vector(7 downto 0)		:= (others => '0');
@@ -214,7 +215,8 @@ begin
 	port map (
 		reset								=> reset_i,
 		clk								=> cpu_clock_s,
-		enable							=> '1',
+		--enable							=> '1',
+      enable   =>not CPU_WAIT,
 		di									=> unsigned(cpu_di_s),
 		std_logic_vector(do)			=> cpu_dout_s,
 		std_logic_vector(addr)		=> cpu_addr_s,
