@@ -312,7 +312,7 @@ wire VSync;
 wire [7:0] video;
 
 
-assign CLK_VIDEO = clock_28_s;
+assign CLK_VIDEO = clk_sys;
 
 /*
 reg ce_pix;
@@ -323,14 +323,15 @@ always @(posedge clk_sys) begin
 	ce_pix <= div == 0;
 end
 */
+/*
 reg ce_pix;
 always @(posedge clk_sys) begin
         reg div;
 
         div <= ~div ;
 	ce_pix <= div == 0;
-end
-assign CE_PIXEL = ce_pix;
+end*/
+assign CE_PIXEL = 1;
 /*
 assign VGA_DE = ~(HBlank | VBlank);
 assign VGA_HS = HSync;
