@@ -209,7 +209,6 @@ localparam CONF_STR = {
 	"O34,Noise,White,Red,Green,Blue;",
 	"-;",
 	"S0,NIBDSKDO PO ;",
-	"H0F2,NIB,IOCTL NIB;",
 	"OA,Dis Rom,On,Off;",
 	"OB,Color Mode,On,Off;",
 	"-;",
@@ -254,7 +253,23 @@ hps_io #(.CONF_STR(CONF_STR),.PS2DIV(1000),.VDNUM(2)) hps_io
 
 	.forced_scandoubler(forced_scandoubler),
 
-	.buttons(buttons),
+	.buttons(buttons),/*
+reg ce_pix;
+always @(posedge clk_sys) begin
+        reg [1:0] div;
+
+        div <= div + 1'd1;
+	ce_pix <= div == 0;
+end
+*/
+/*
+reg ce_pix;
+always @(posedge clk_sys) begin
+        reg div;
+
+        div <= ~div ;
+	ce_pix <= div == 0;
+end*/
 	.status(status),
 	.status_menumask({status[5]}),
 	.joystick_0(joy1),
@@ -314,32 +329,11 @@ wire [7:0] video;
 
 assign CLK_VIDEO = clk_sys;
 
-/*
-reg ce_pix;
-always @(posedge clk_sys) begin
-        reg [1:0] div;
 
-        div <= div + 1'd1;
-	ce_pix <= div == 0;
-end
-*/
-/*
-reg ce_pix;
-always @(posedge clk_sys) begin
-        reg div;
 
-        div <= ~div ;
-	ce_pix <= div == 0;
-end*/
 assign CE_PIXEL = 1;
-/*
-assign VGA_DE = ~(HBlank | VBlank);
-assign VGA_HS = HSync;
-assign VGA_VS = VSync;
-assign VGA_G  = (!col || col == 2) ? video : 8'd0;
-assign VGA_R  = (!col || col == 1) ? video : 8'd0;
-assign VGA_B  = (!col || col == 3) ? video : 8'd0;
-*/
+
+
 assign LED_USER    = 1'b0;
 
 
@@ -546,13 +540,13 @@ wire rd_pulse_s;
 	 
   always @(posedge clock_28_s) begin
     kbd_joy_s <= kbd_cols_s;
-/*    if((kbd_rows_s[6] == 1'b1 && joy1_up_i == 1'b0) || (kbd_rows_s[5] == 1'b1 && joy1_down_i == 1'b0) || (kbd_rows_s[4] == 1'b1 && joy1_right_i == 1'b0) || (kbd_rows_s[3] == 1'b1 && joy1_left_i == 1'b0)) begin
+    if((kbd_rows_s[6] == 1'b1 && joy1_up_i == 1'b0) || (kbd_rows_s[5] == 1'b1 && joy1_down_i == 1'b0) || (kbd_rows_s[4] == 1'b1 && joy1_right_i == 1'b0) || (kbd_rows_s[3] == 1'b1 && joy1_left_i == 1'b0)) begin
       kbd_joy_s <= kbd_joy_s | 6'b000001;
     end
     if((kbd_rows_s[7] == 1'b1 && joy1_p6_i == 1'b0) || (kbd_rows_s[7] == 1'b1 && joy1_p9_i == 1'b0)) begin
       kbd_joy_s <= kbd_joy_s | 6'b010000;
     end
- */
+ 
  //generate a slower clock for the keyboard
     div_s <= div_s + 1;
     clk_kbd_s <= div_s[1];
@@ -597,81 +591,6 @@ wire rd_pulse_s;
 	assign VGA_B	= video_b_s;	 
   assign VGA_DE = (video_blank_s);
 
-//`define diskinram
-  
-`ifdef diskinram
-
- disk_ii disk(
-    .CLK_14M(clock_14_s),
-    .CLK_2M(clock_2M_s),
-    .PRE_PHASE_ZERO(phi0_s),
-	 
-    .IO_SELECT(~per_iosel_n_s),
-    .DEVICE_SELECT(~per_devsel_n_s),
-	 
-    .RESET(reset_s),
-    .A(per_addr_s),
-    .D_IN(per_data_to_s),
-    .D_OUT(per_data_from_s),
-	 
-	 
-    .TRACK(track_num_s),
-    .TRACK_ADDR(track_addr_s),
-	 
-    .D1_ACTIVE(disk1_en_s),
-    .D2_ACTIVE(disk2_en_s),
-    .ram_write_addr(track_ram_addr_s),
-    .ram_di(track_ram_data_s),
-    .ram_we(track_ram_we_s),
-	 
-    .step_sound_o(step_sound_s),
-    //------------------------------------------------------------------------------
-    .motor_phase_o(motor_phase_s),
-    .drive_en_o(drive_en_s),
-    .rd_pulse_o(rd_pulse_s));
-
-	 
-	 
-
-  image_controller image_ctrl(
-      // System Interface -------------------------------------------------------
-    .CLK_14M(clock_14_s),
-    .reset(reset_s),
-    // SRAM Interface ---------------------------------------------------------
-    .buffer_addr_i(disk_addr_s),
-    .buffer_data_i(disk_data_s),
-    // Track buffer Interface -------------------------------------------------
-    .ram_write_addr(track_ram_addr_s[12:0]),
-    // out
-    .ram_di(track_ram_data_s),
-    // out
-    .ram_we(track_ram_we_s),
-    // out
-    .track(track_num_s),
-    .image(1'b0));
-
-
-//
-//Disk Buffer
-//
-//Hold entire disk image here - from ioctl
-//
-//
-    
-dpram2 #(.addr_width_g(18),.data_width_g(8))
-address_table(
-	.clock_a(clk_sys),
-	.address_a(ioctl_addr[17:0]),
-	.data_a(ioctl_data), 
-	.wren_a(ioctl_wr ),
-	
-	.clock_b(clock_14_s),
-	.address_b(disk_addr_s[17:0]),
-	.q_b(disk_data_s)
-);
-
-    
-`else
 
 
 
@@ -756,21 +675,20 @@ always @(posedge clk_sys) begin
 	end
 end
 
-`endif
- 	 
-assign joy1_right_i  = joy1[0];
-assign joy1_left_i   = joy1[1];
-assign joy1_down_i   = joy1[2];
-assign joy1_up_i     = joy1[3];
-assign joy1_p6_i= joy1[4];
-assign joy1_p9_i= joy1[5];
+
+wire joy1_right_i  = ~joy1[0];
+wire joy1_left_i   = ~joy1[1];
+wire joy1_down_i   = ~joy1[2];
+wire joy1_up_i     = ~joy1[3];
+wire joy1_p6_i= ~joy1[4];
+wire joy1_p9_i= ~joy1[5];
 
 
-  assign joy2_right_i = motor_phase_s[3];
-  assign joy2_left_i = motor_phase_s[2];
-  assign joy2_down_i = motor_phase_s[1];
-  assign joy2_up_i = motor_phase_s[0];
-  assign joy2_p6_i = drive_en_s;
+  wire joy2_right_i = motor_phase_s[3];
+  wire joy2_left_i = motor_phase_s[2];
+  wire joy2_down_i = motor_phase_s[1];
+  wire joy2_up_i = motor_phase_s[0];
+  wire joy2_p6_i = drive_en_s;
 
  //--    joy2_p9_i    <= rd_pulse_s;
 
