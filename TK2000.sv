@@ -207,6 +207,7 @@ localparam CONF_STR = {
 	"O89,Aspect ratio,Original,Full Screen,[ARC1],[ARC2];",
 	"O2,TV Mode,NTSC,PAL;",
 	"O34,Noise,White,Red,Green,Blue;",
+	"O56,Display,Color,B&W,Green,Amber;",
 	"-;",
 	"S0,NIBDSKDO PO ;",
 	"OA,Dis Rom,On,Off;",
@@ -253,23 +254,7 @@ hps_io #(.CONF_STR(CONF_STR),.PS2DIV(1000),.VDNUM(2)) hps_io
 
 	.forced_scandoubler(forced_scandoubler),
 
-	.buttons(buttons),/*
-reg ce_pix;
-always @(posedge clk_sys) begin
-        reg [1:0] div;
-
-        div <= div + 1'd1;
-	ce_pix <= div == 0;
-end
-*/
-/*
-reg ce_pix;
-always @(posedge clk_sys) begin
-        reg div;
-
-        div <= ~div ;
-	ce_pix <= div == 0;
-end*/
+	.buttons(buttons),
 	.status(status),
 	.status_menumask({status[5]}),
 	.joystick_0(joy1),
@@ -304,13 +289,15 @@ wire ps2_kbd_data;
 ///////////////////////   CLOCKS   ///////////////////////////////
 
 //wire clk_sys = clock_28_s;
+wire clock_57_s;
 wire clk_sys = clock_14_s;
 pll pll
 (
 	.refclk(CLK_50M),
 	.rst(0),
-	.outclk_0(clock_28_s),
-	.outclk_1(clock_14_s),
+	.outclk_0(clock_57_s),
+	.outclk_1(clock_28_s),
+	.outclk_2(clock_14_s),
 	.locked(pll_locked_s)
 );
 
@@ -327,80 +314,86 @@ wire VSync;
 wire [7:0] video;
 
 
-assign CLK_VIDEO = clk_sys;
+assign CLK_VIDEO = clock_57_s;
+reg ce_pix;
+always @(posedge CLK_VIDEO) begin
+	reg [2:0] div = 0;
+	
+	div <= div + 1'd1;
+	ce_pix <=  &div ;
+end
 
 
-
-assign CE_PIXEL = 1;
+assign CE_PIXEL = ce_pix;
 
 
 assign LED_USER    = 1'b0;
 
 
- 
-    //-- Clocks
-    wire clock_28_s;      // Dobro para scandoubler
-    wire clock_14_s;      // Master
-    wire phi0_s;        // phase 0
-    wire phi1_s;        // phase 1
-    wire phi2_s;        // phase 2
-    wire clock_2M_s;       // Clock Q3
-    wire clock_dvi_s;
 
-    wire clk_kbd_s;
-    wire [2:0] div_s;
+//-- Clocks
+wire clock_28_s;      // Dobro para scandoubler
+wire clock_14_s;      // Master
+wire phi0_s;        // phase 0
+wire phi1_s;        // phase 1
+wire phi2_s;        // phase 2
+wire clock_2M_s;       // Clock Q3
+wire clock_dvi_s;
+
+wire clk_kbd_s;
+wire [2:0] div_s;
 
 
-    // Resets
-    wire pll_locked_s;
-    reg por_reset_s =1'b1 ;  //   : std_logic := '1';
-    wire reset_s;
+// Resets
+wire pll_locked_s;
+reg por_reset_s =1'b1 ;  //   : std_logic := '1';
+wire reset_s;
 
-    // ROM
-    wire [13:0] rom_addr_s;
-    wire [7:0] rom_data_from_s;
+// ROM
+wire [13:0] rom_addr_s;
+wire [7:0] rom_data_from_s;
 //--  signal rom_oe_s         : std_logic;
 //--  signal rom_we_s         : std_logic;
 
-    // RAM
-    wire [15:0] ram_addr_s;
-    wire [7:0] ram_data_to_s;
-    wire [7:0] ram_data_from_s;
-    wire ram_oe_s;
-    wire ram_we_s;
-    wire [15:0] ram_addr;
-    wire [7:0] ram_data;
-    wire ram_we;
-        
-    // Keyboard
-    wire kbd_ctrl_s;
-    wire [7:0] kbd_rows_s;
-    wire [5:0] kbd_cols_s;
-    wire [12:1] FKeys_s;
-    wire [7:0] osd_s;
+// RAM
+wire [15:0] ram_addr_s;
+wire [7:0] ram_data_to_s;
+wire [7:0] ram_data_from_s;
+wire ram_oe_s;
+wire ram_we_s;
+wire [15:0] ram_addr;
+wire [7:0] ram_data;
+wire ram_we;
+  
+// Keyboard
+wire kbd_ctrl_s;
+wire [7:0] kbd_rows_s;
+wire [5:0] kbd_cols_s;
+wire [12:1] FKeys_s;
+wire [7:0] osd_s;
 
-    // Audio
-    wire spk_s;
+// Audio
+wire spk_s;
 
-    // K7
-    wire cas_o_s;
+// K7
+wire cas_o_s;
 //--  signal cas_motor_s      : std_logic_vector(1 downto 0);
 
-   // -- Video
-    wire [7:0] video_r_s;
-    wire [7:0] video_g_s ;
-    wire [7:0] video_b_s;
-    wire [7:0] video_ro_s;
-    wire [7:0] video_go_s;
-    wire [7:0] video_bo_s;
-    wire video_color_s ;
-    wire video_bit_s;
-    wire video_hsync_n_s ;
-    wire video_vsync_n_s;
-    wire video_blank_s  ;
-    wire video_hbl_s  ;
-    wire video_vbl_s   ;
-    wire video_ld194_s   ;
+// -- Video
+wire [7:0] video_r_s;
+wire [7:0] video_g_s ;
+wire [7:0] video_b_s;
+wire [7:0] video_ro_s;
+wire [7:0] video_go_s;
+wire [7:0] video_bo_s;
+wire video_color_s ;
+wire video_bit_s;
+wire video_hsync_n_s ;
+wire video_vsync_n_s;
+wire video_blank_s  ;
+wire video_hbl_s  ;
+wire video_vbl_s   ;
+wire video_ld194_s   ;
 wire per_iosel_n_s;
 wire per_devsel_n_s;
 wire per_we_s;
@@ -415,12 +408,10 @@ wire disk2_en_s;
 wire [13:0] track_ram_addr_s;
 wire [7:0] track_ram_data_s;
 wire track_ram_we_s;  // OSD
-reg osd_visible_s = 1'b1;
 wire osd_pixel_s;
 wire [4:0] osd_green_s;  // OSD byte signal
 wire btn_up_s ;
 wire btn_down_s  ;
-reg [21:0] timer_osd_s = 1'b1;  // Debug
 wire [15:0] D_cpu_pc_s;  //
 wire [3:0] color_index;
 wire [1:0] scanlines_en_s;
@@ -434,7 +425,6 @@ wire [9:0] vga_x_s;
 wire [9:0] vga_y_s;
 reg [22:0] flash_clk = 1'b0;
 wire [31:0] menu_status;
-wire mc_ack = 1'b0;
 wire odd_line_s;
 wire step_sound_s;
 reg [5:0] kbd_joy_s;  // Data pump
@@ -492,7 +482,7 @@ wire rd_pulse_s;
     .video_vbl_o(video_vbl_s),
     .video_ld194_o(video_ld194_s),
     // Cassete
-    .cas_i(ear_i),
+    .cas_i(1'b0),
     .cas_o(cas_o_s),
     .cas_motor_o(/* open */),
     //cas_motor_s,
@@ -561,8 +551,26 @@ wire rd_pulse_s;
     .address(rom_addr_s),
     .q(rom_data_from_s));
 
+// 1 is monochrome
+wire 	   COLOR_LINE_CONTROL = video_color_s |  (status[6] |  status[5]);  // Color or B&W mode
 
-
+ // VGA
+  vga_controller_appleii vga(
+    .CLK_14M(clock_14_s),
+    .VIDEO(video_bit_s),
+    .COLOR_LINE(COLOR_LINE_CONTROL),
+	 .SCREEN_MODE(status[6:5]),
+    .HBL(video_hbl_s),
+    .VBL(video_vbl_s),
+    .VGA_HS(video_hsync_n_s),
+    .VGA_VS(video_vsync_n_s),
+	 .VGA_HBL(HBlank),
+	 .VGA_VBL(VBlank),
+	 
+    .VGA_R(video_r_s),
+    .VGA_G(video_g_s),
+    .VGA_B(video_b_s));
+/*
   // VGA
   vga_controller vga(
     .clock_28_i(clock_28_s),
@@ -583,14 +591,14 @@ wire rd_pulse_s;
     .vga_b_o(video_b_s),
     .vga_odd_line_o(odd_line_s),
     .color_index(color_index));
-	
+*/	
 	assign VGA_HS	= video_hsync_n_s;
 	assign VGA_VS	= video_vsync_n_s;
 	assign VGA_R	= video_r_s;
 	assign VGA_G	= video_g_s;
 	assign VGA_B	= video_b_s;	 
-  assign VGA_DE = (video_blank_s);
-
+//  assign VGA_DE = (video_blank_s);
+   assign VGA_DE =  ~(VBlank | HBlank);
 
 
 
@@ -683,15 +691,15 @@ wire joy1_up_i     = ~joy1[3];
 wire joy1_p6_i= ~joy1[4];
 wire joy1_p9_i= ~joy1[5];
 
-
-  wire joy2_right_i = motor_phase_s[3];
-  wire joy2_left_i = motor_phase_s[2];
-  wire joy2_down_i = motor_phase_s[1];
-  wire joy2_up_i = motor_phase_s[0];
-  wire joy2_p6_i = drive_en_s;
+/*
+wire joy2_right_i = motor_phase_s[3];
+wire joy2_left_i = motor_phase_s[2];
+wire joy2_down_i = motor_phase_s[1];
+wire joy2_up_i = motor_phase_s[0];
+wire joy2_p6_i = drive_en_s;
 
  //--    joy2_p9_i    <= rd_pulse_s;
-
+*/
       
   assign scanlines_en_s = 2'b00;
     
@@ -741,7 +749,6 @@ wire joy1_p9_i= ~joy1[5];
 
 
     
-  assign mic_o = cas_o_s;
 
   
 

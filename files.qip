@@ -17,6 +17,7 @@ set_global_assignment -name VHDL_FILE src/peripheral/spi_controller.vhd
 set_global_assignment -name VHDL_FILE src/peripheral/image_control.vhd
 set_global_assignment -name VHDL_FILE src/video/video_generator.vhd
 set_global_assignment -name VHDL_FILE src/video/vga_controller.vhd
+set_global_assignment -name VHDL_FILE src/video/vga_controller_appleii.vhd
 set_global_assignment -name VHDL_FILE src/osd/char_rom.vhd
 set_global_assignment -name VHDL_FILE src/osd/osd_track.vhd
 set_global_assignment -name VHDL_FILE rtl/dpram.vhd
