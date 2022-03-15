@@ -26,7 +26,7 @@ module emu
 	input         RESET,
 
 	//Must be passed to hps_io module
-	inout  [45:0] HPS_BUS,
+	inout  [48:0] HPS_BUS,
 
 	//Base video clock. Usually equals to CLK_SYS.
 	output        CLK_VIDEO,
@@ -37,8 +37,8 @@ module emu
 
 	//Video aspect ratio for HDMI. Most retro systems have ratio 4:3.
 	//if VIDEO_ARX[12] or VIDEO_ARY[12] is set then [11:0] contains scaled size instead of aspect ratio.
-	output [12:0] VIDEO_ARX,
-	output [12:0] VIDEO_ARY,
+	output [7:0] VIDEO_ARX,
+	output [7:0] VIDEO_ARY,
 
 	output  [7:0] VGA_R,
 	output  [7:0] VGA_G,
@@ -101,6 +101,7 @@ module emu
 	output [15:0] AUDIO_R,
 	output        AUDIO_S,   // 1 - signed audio samples, 0 - unsigned
 	output  [1:0] AUDIO_MIX, // 0 - no mix, 1 - 25%, 2 - 50%, 3 - 100% (mono)
+	input         TAPE_IN,
 
 	//ADC
 	inout   [3:0] ADC_BUS,
@@ -189,16 +190,17 @@ assign AUDIO_L = { 2'b0,spk_s,spk_s,12'b0};
 assign AUDIO_R = AUDIO_L;
 assign AUDIO_MIX = 0;
 
-assign LED_DISK = 0;
-assign LED_POWER = 0;
+assign LED_DISK = LED; // 0;
+assign LED_POWER = 1; // 0;
 assign BUTTONS = 0;
 
 //////////////////////////////////////////////////////////////////
+wire LED;
 
 wire [1:0] ar = status[9:8];
 
-assign VIDEO_ARX = (!ar) ? 12'd4 : (ar - 1'd1);
-assign VIDEO_ARY = (!ar) ? 12'd3 : 12'd0;
+assign VIDEO_ARX = 4; //(!ar) ? 12'd4 : (ar - 1'd1);
+assign VIDEO_ARY = 3; //(!ar) ? 12'd3 : 12'd0;
 
 `include "build_id.v" 
 localparam CONF_STR = {
@@ -222,7 +224,7 @@ wire forced_scandoubler;
 wire  [1:0] buttons;
 wire [31:0] status;
 wire [10:0] ps2_key;
-wire [31:0] joy1, joy2;
+wire [15:0] joy1, joy2;
 
 
 wire [31:0] sd_lba[2];
@@ -243,7 +245,7 @@ wire        ioctl_wr;
 wire [24:0] ioctl_addr;
 wire  [7:0] ioctl_data;
 wire  [7:0] ioctl_index;
-
+reg 		ioctl_wait = 0;
 
 hps_io #(.CONF_STR(CONF_STR),.PS2DIV(1000),.VDNUM(2)) hps_io
 (
@@ -277,12 +279,13 @@ hps_io #(.CONF_STR(CONF_STR),.PS2DIV(1000),.VDNUM(2)) hps_io
 	.ioctl_addr(ioctl_addr),
 	.ioctl_dout(ioctl_data),
 	.ioctl_index(ioctl_index),
+	.ioctl_wait(ioctl_wait),
 	
-	
-	.ps2_key(ps2_key),
-   .ps2_kbd_clk_out    ( ps2_kbd_clk    ),
-   .ps2_kbd_data_out   ( ps2_kbd_data   )
+	//.ps2_key(ps2_key),
+    .ps2_kbd_clk_out    ( ps2_kbd_clk    ),
+    .ps2_kbd_data_out   ( ps2_kbd_data   )
 );
+
 wire ps2_kbd_clk;
 wire ps2_kbd_data;
 
@@ -291,6 +294,7 @@ wire ps2_kbd_data;
 //wire clk_sys = clock_28_s;
 wire clock_57_s;
 wire clk_sys = clock_14_s;
+
 pll pll
 (
 	.refclk(CLK_50M),
@@ -300,12 +304,10 @@ pll pll
 	.outclk_2(clock_14_s),
 	.locked(pll_locked_s)
 );
-
     
 wire reset = RESET | status[0] | buttons[1];
 
 //////////////////////////////////////////////////////////////////
-
 
 wire HBlank;
 wire HSync;
@@ -323,12 +325,9 @@ always @(posedge CLK_VIDEO) begin
 	ce_pix <=  &div ;
 end
 
-
 assign CE_PIXEL = ce_pix;
 
-
 assign LED_USER    = 1'b0;
-
 
 
 //-- Clocks
@@ -448,9 +447,7 @@ wire rd_pulse_s;
 
 
 
-
-
-    tk2000 tk2000 (
+tk2000 tk2000 (
     .clock_14_i(clock_14_s),
     .reset_i(reset_s),
     .CPU_WAIT(cpu_wait_fdd),
@@ -523,9 +520,6 @@ wire rd_pulse_s;
     .cols_o(kbd_cols_s),
     .FKeys_o(FKeys_s),
     .osd_o(osd_s));
-
-	 
-	 
 
 	 
   always @(posedge clock_28_s) begin
