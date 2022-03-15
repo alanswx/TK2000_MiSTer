@@ -52,33 +52,11 @@ architecture rtl of vga_controller_appleii is
 	-- https://groups.google.com/g/comp.sys.apple2/c/uILy74pRsrk/m/G9XDxQhWi1AJ
 
 	type basis_color is array(0 to 3) of unsigned(7 downto 0);
-	--constant basis_r : basis_color := ( X"88", X"38", X"07", X"38" );
-	--constant basis_g : basis_color := ( X"22", X"24", X"67", X"52" );
-	--constant basis_b : basis_color := ( X"2C", X"A0", X"2C", X"07" );
-
-	-- dark green, blue, green, ?brown?
 
 	-- TK2000 (green, blue, cyan, red)
-	-- Dark Green = #00 69 40
-	-- Red = #700707
-	-- Blue = #2F95E5
-	-- Cyan = #07e0e0
-
-	-- blue (appleii) = 30 8F E3
-    -- from TK2000 code
-	-- dark green, ?? (CODED AQUA), blue, red, light green (CODED BLUE)
-	-- TK2000 (green, blue, cyan, red)	
-	-- TK2000 (R, B, C, G)
-	constant basis_r : basis_color := ( X"8A", X"38", X"6E", X"2F" );
-	constant basis_g : basis_color := ( X"21", X"24", X"E1", X"B8" );  
-	constant basis_b : basis_color := ( X"40", X"A0", X"C0", X"1F" );
-	--constant basis_r : basis_color := ( X"00", X"90", X"6F", X"2F" );  greens with white where reds should be
-	--constant basis_g : basis_color := ( X"69", X"17", X"E8", X"95" );  
-	--constant basis_b : basis_color := ( X"40", X"40", X"BF", X"E5" );
-
-	--constant basis_r : basis_color := ( X"07", X"37", X"08", X"70" );
-	--constant basis_g : basis_color := ( X"70", X"10", X"B0", X"07" );  -- swapped
-	--constant basis_b : basis_color := ( X"07", X"94", X"2C", X"07" );
+	constant basis_r : basis_color := ( X"2F", X"40", X"6F", X"90" );
+	constant basis_g : basis_color := ( X"BC", X"2C", X"E8", X"17" );  
+	constant basis_b : basis_color := ( X"1A", X"A5", X"BF", X"40" );	
 
 	signal shift_reg : unsigned(5 downto 0);  -- Last six pixels
 

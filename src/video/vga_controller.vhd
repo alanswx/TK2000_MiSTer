@@ -117,29 +117,15 @@ architecture rtl of vga_controller is
 
 	type basis_color_t is array(0 to 3) of unsigned(7 downto 0);
 	-- TK2000 (green, blue, cyan, red)
-	-- Green = #379410
-	-- Red = #700707
-	-- Blue = #082cb0
-	-- Cyan = #07e0e0
-	-- red, blue, cyan, green
-	constant basis_r1_c : basis_color_t := ( X"70", X"37", X"08", X"50" );
-	constant basis_g1_c : basis_color_t := ( X"07", X"94", X"2C", X"38" );
-	constant basis_b1_c : basis_color_t := ( X"07", X"10", X"B0", X"38" );	
-	-- original:
-	--constant basis_r1_c : basis_color_t := ( X"50", X"37", X"08", X"70" );
-	--constant basis_g1_c : basis_color_t := ( X"38", X"94", X"2C", X"07" );
-	--constant basis_b1_c : basis_color_t := ( X"38", X"10", X"B0", X"07" );	
+	constant basis_r1_c : basis_color_t := ( X"50", X"37", X"08", X"70" );
+	constant basis_g1_c : basis_color_t := ( X"38", X"94", X"2C", X"07" );
+	constant basis_b1_c : basis_color_t := ( X"38", X"10", X"B0", X"07" );	
 	
---	constant basis_r1_c : basis_color_t := ( X"80", X"37", X"08", X"40" );
---	constant basis_g1_c : basis_color_t := ( X"2C", X"A0", X"2C", X"07" );
---	constant basis_b1_c : basis_color_t := ( X"20", X"26", X"76", X"43" );
-
-
 	-- Apple 2        (vermelho, azul, verde, verde-escuro)
 	--  			   red,      blue, green, dark green	
 	constant basis_r2_c : basis_color_t := ( X"88", X"38", X"07", X"38" );
 	constant basis_g2_c : basis_color_t := ( X"22", X"24", X"67", X"52" );
-	constant basis_b2_c : basis_color_t := ( X"2C", X"A0", X"2C", X"07" );
+	constant basis_b2_c : basis_color_t := ( X"2C", X"A0", X"2C", X"07" );	
 	
 	constant basis_c : basis_color_t := ( X"01", X"02", X"04", X"08" );
 
