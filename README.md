@@ -1,32 +1,31 @@
-# TK2000
+# MiSTer port of TK2000 (Apple-II clone)
 
+#### original TK2000 by Victor Trucco
 [MC2+ Release Bitstream p/ download no Gitlab](https://gitlab.com/victor.trucco/Multicore_Bitstreams/-/tree/master/Multicore%202%20Plus/Computers/TK2000)
 
 [MC2 Release Bitstream p/ download no Gitlab](https://gitlab.com/victor.trucco/Multicore_Bitstreams/-/tree/master/Multicore%202/Computers/TK2000)
 
+Updated to MiSTer by alanswx
+additional palette work by JasonA
+
+
 - VGA
 - HDMI
-- Drive DiskII 
-- Carregamento de arquivos a partir de audio
-- Som do movimento da cabeça do drive (experimental)
+- Drive Disk II 
+- Loading files from audio
+- Drive head movement sound (experimental)
 
-Soft Reset: Botão 3
-Hard Reset: Botão 3 + botão 4
+Soft Reset: Button 3
+Hard Reset: Button 3 + button 4
 
-#### Uso
+#### Use
 
-Coloque o arqui .MC2 no raiz do seu cartão SD. Os arquivos .NIB podem estar em pastas, no mesmo SD. 
+The .NIB files are conversions of the original TK2000 DSKs. DSK and CT2 support is a WIP.
 
-Os arquivos .NIB são conversões dos DSK originais do TK2000. O conversor se encontra na pasta /Utils.
+Use the OSD to open the options menu. To load a program, select the option "LOAD *.NIB" in the menu and wait for the TK2000 to boot. Sometimes its necessary to go back to the OSD menu, and select the "RESET" option after loading a NIB file.
 
-Use F12 para abrir o menu de opções. Para carregar um programa, selecione a opção "LOAD *.NIB" no menu e aguarde o boot do TK2000.
+##### Change log prior to official MiSTer conversion
 
-Verifique a pasta "/Utils" para maiores informações sobre a imagem dos discos para o cartão SD
-
-ATENÇÃO! Necessita firware STM v.1.05 e CORE v.1.03
-
-##### Change log
-
-- 003 : 09/12/2019 - HDMI e suporte a discos em FAT32
-- 002 : 09/07/2018 - versão inicial Multicore 2
-- 001 : 16/03/2017 - versão inicial
+- 003 : 09/12/2019 - HDMI and FAT32 disk support
+- 002 : 09/07/2018 - initial version Multicore 2
+- 001 : 16/03/2017 - initial release

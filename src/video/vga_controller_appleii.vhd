@@ -64,13 +64,14 @@ architecture rtl of vga_controller_appleii is
 	-- Blue = #2F95E5
 	-- Cyan = #07e0e0
 
+	-- blue (appleii) = 30 8F E3
     -- from TK2000 code
 	-- dark green, ?? (CODED AQUA), blue, red, light green (CODED BLUE)
 	-- TK2000 (green, blue, cyan, red)	
 	-- TK2000 (R, B, C, G)
-	constant basis_r : basis_color := ( X"8A", X"30", X"6E", X"2F" );
-	constant basis_g : basis_color := ( X"21", X"8F", X"E1", X"B8" );  
-	constant basis_b : basis_color := ( X"40", X"E3", X"C0", X"1F" );
+	constant basis_r : basis_color := ( X"8A", X"38", X"6E", X"2F" );
+	constant basis_g : basis_color := ( X"21", X"24", X"E1", X"B8" );  
+	constant basis_b : basis_color := ( X"40", X"A0", X"C0", X"1F" );
 	--constant basis_r : basis_color := ( X"00", X"90", X"6F", X"2F" );  greens with white where reds should be
 	--constant basis_g : basis_color := ( X"69", X"17", X"E8", X"95" );  
 	--constant basis_b : basis_color := ( X"40", X"40", X"BF", X"E5" );
