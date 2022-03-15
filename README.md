@@ -5,8 +5,7 @@
 
 [MC2 Release Bitstream p/ download no Gitlab](https://gitlab.com/victor.trucco/Multicore_Bitstreams/-/tree/master/Multicore%202/Computers/TK2000)
 
-Updated to MiSTer by alanswx
-additional palette work by JasonA
+Updated to MiSTer by alanswx, additional palette work by JasonA
 
 
 - VGA
@@ -22,7 +21,7 @@ Hard Reset: Button 3 + button 4
 
 The .NIB files are conversions of the original TK2000 DSKs. DSK and CT2 support is a WIP.
 
-Use the OSD to open the options menu. To load a program, select the option "LOAD *.NIB" in the menu and wait for the TK2000 to boot. Sometimes its necessary to go back to the OSD menu, and select the "RESET" option after loading a NIB file.
+Use the OSD to open the options menu. To load a program, select the option "LOAD *.NIB" in the menu and wait for the TK2000 to boot. Sometimes its necessary to go back to the OSD menu, and select the "RESET" option after loading a .NIB file.
 
 ##### Change log prior to official MiSTer conversion
 
