@@ -594,36 +594,35 @@ wire 	   COLOR_LINE_CONTROL = video_color_s |  (status[6] |  status[5]);  // Col
 //  assign VGA_DE = (video_blank_s);
    assign VGA_DE =  ~(VBlank | HBlank);
 
-
-
- disk_ii disk(
-    .CLK_14M(clock_14_s),
-    .CLK_2M(clock_2M_s),
-    .PRE_PHASE_ZERO(phi0_s),
+ //disk_ii disk (
+ //   .CLK_14M(clock_14_s),
+ //   .CLK_2M(clock_2M_s),
+ //   .PRE_PHASE_ZERO(phi0_s),
 	 
-    .IO_SELECT(~per_iosel_n_s),
-    .DEVICE_SELECT(~per_devsel_n_s),
+//    .IO_SELECT(~per_iosel_n_s),
+//    .DEVICE_SELECT(~per_devsel_n_s),
 	 
-    .RESET(reset_s),
-    .A(per_addr_s),
-    .D_IN(per_data_to_s),
-    .D_OUT(per_data_from_s),
+//    .RESET(reset_s),
+//    .A(per_addr_s),
+//    .D_IN(per_data_to_s),
+//    .D_OUT(per_data_from_s),
 	 
 	 
-    .TRACK(track),
-    .TRACK_ADDR(track_addr_s),
+//    .TRACK(track),
+//    .TRACK_ADDR(track_addr_s),
 	 
-    .D1_ACTIVE(disk1_en_s),
-    .D2_ACTIVE(disk2_en_s),
-    .ram_write_addr({track_sec, sd_buff_addr}),
-    .ram_di(sd_buff_dout),
-    .ram_we(sd_buff_wr & sd_ack[0]),
+//    .D1_ACTIVE(disk1_en_s),
+//    .D2_ACTIVE(disk2_en_s),
+//    .ram_write_addr({track_sec, sd_buff_addr}),
+//    .ram_di(sd_buff_dout),
+//    .ram_we(sd_buff_wr & sd_ack[0]),
 	 
-    .step_sound_o(step_sound_s),
+//    .step_sound_o(step_sound_s),
     //------------------------------------------------------------------------------
-    .motor_phase_o(motor_phase_s),
-    .drive_en_o(drive_en_s),
-    .rd_pulse_o(rd_pulse_s));
+//    .motor_phase_o(motor_phase_s),
+//    .drive_en_o(drive_en_s),
+//    .rd_pulse_o(rd_pulse_s)
+//);
 	 
 assign sd_buff_din[1] = 0;
 assign      sd_lba[1] = 0;

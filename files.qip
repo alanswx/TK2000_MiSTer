@@ -11,8 +11,10 @@ set_global_assignment -name VHDL_FILE src/shared/debounce.vhd
 set_global_assignment -name VHDL_FILE src/shared/keymaps.vhd
 set_global_assignment -name VHDL_FILE src/shared/keyboard.vhd
 set_global_assignment -name VHDL_FILE src/shared/ps2_iobase.vhd
-set_global_assignment -name VHDL_FILE src/peripheral/disk_ii.vhd
+#set_global_assignment -name VHDL_FILE src/peripheral/disk_ii.vhd
 set_global_assignment -name VHDL_FILE src/peripheral/disk_ii_rom.vhd
+set_global_assignment -name VERILOG_FILE src/peripheral/disk_ii.v
+set_global_assignment -name VERILOG_FILE rtl/rom.v
 set_global_assignment -name VHDL_FILE src/peripheral/spi_controller.vhd
 set_global_assignment -name VHDL_FILE src/peripheral/image_control.vhd
 set_global_assignment -name VHDL_FILE src/video/video_generator.vhd
