@@ -57,35 +57,35 @@ entity tk2000 is
 	port (
 		clock_14_i			: in   std_logic								:= '0';
 		reset_i				: in   std_logic								:= '0';
-		CPU_WAIT       : in std_logic;
+		CPU_WAIT       		: in std_logic;
 		-- RAM da CPU
 		ram_addr_o			: out  std_logic_vector(15 downto 0)	:= (others => '0');
 		ram_data_to_o		: out  std_logic_vector(7 downto 0)		:= (others => '0');
-		ram_data_from_i	: in   std_logic_vector(7 downto 0)		:= (others => '0');
-		ram_oe_o				: out  std_logic								:= '0';
-		ram_we_o				: out  std_logic								:= '0';
+		ram_data_from_i		: in   std_logic_vector(7 downto 0)		:= (others => '0');
+		ram_oe_o			: out  std_logic								:= '0';
+		ram_we_o			: out  std_logic								:= '0';
 		-- ROM
 		rom_addr_o			: out  std_logic_vector(13 downto 0)	:= (others => '0');
-		rom_data_from_i	: in   std_logic_vector(7 downto 0)		:= (others => '0');
-		rom_oe_o				: out  std_logic								:= '0';
-		rom_we_o				: out  std_logic								:= '0';
+		rom_data_from_i		: in   std_logic_vector(7 downto 0)		:= (others => '0');
+		rom_oe_o			: out  std_logic								:= '0';
+		rom_we_o			: out  std_logic								:= '0';
 		-- Keyboard
 		kbd_rows_o			: out  std_logic_vector(7 downto 0)		:= (others => '0');
 		kbd_cols_i			: in   std_logic_vector(5 downto 0)		:= (others => '0');
 		kbd_ctrl_o			: out  std_logic;
 		-- Audio
-		spk_o					: out  std_logic								:= '0';
+		spk_o				: out  std_logic								:= '0';
 		-- Video
 		video_color_o		: out  std_logic								:= '0';
 		video_bit_o			: out  std_logic								:= '0';
-		video_hsync_n_o	: out  std_logic								:= '0';
-		video_vsync_n_o	: out  std_logic								:= '0';
+		video_hsync_n_o		: out  std_logic								:= '0';
+		video_vsync_n_o		: out  std_logic								:= '0';
 		video_hbl_o			: out  std_logic								:= '0';
 		video_vbl_o			: out  std_logic								:= '0';
 		video_ld194_o		: out  std_logic								:= '0';
-		-- Cassete
-		cas_i					: in   std_logic								:= '0';
-		cas_o					: out  std_logic								:= '0';
+		-- Cassette
+		cas_i				: in   std_logic								:= '0';
+		cas_o				: out  std_logic								:= '0';
 		cas_motor_o			: out  std_logic_vector(1 downto 0)		:= (others => '0');
 		-- LPT
 		lpt_stb_o			: out  std_logic								:= '0';
@@ -101,12 +101,27 @@ entity tk2000 is
 		dis_rom_i			: in   std_logic								:= '0';					-- Se 1 desabilita ROM ou RAM em $C1xx
 		io_select_n_o		: out  std_logic								:= '1';					-- Sai 0 se dis_rom=1 e acesso em $C1xx
 		dev_select_n_o		: out  std_logic								:= '1';					-- Sai 0 se acesso em $C09x
-		per_addr_o			: out  std_logic_vector(7 downto 0)		:= (others => '0');	-- Address bus
-		per_data_from_i	: in   std_logic_vector(7 downto 0)		:= (others => '0');
+		per_addr_o			: out  std_logic_vector(7 downto 0)		:= (others => '0');				-- Address bus
+		per_data_from_i		: in   std_logic_vector(7 downto 0)		:= (others => '0');
 		per_data_to_o		: out  std_logic_vector(7 downto 0)		:= (others => '0');
 		-- Debug
-		D_cpu_pc_o			: out  std_logic_vector(15 downto 0)	:= (others => '0')
-	);
+		D_cpu_pc_o			: out  std_logic_vector(15 downto 0)	:= (others => '0');
+
+		-- disk control
+		TRACK1 				: out unsigned(5 downto 0);
+		TRACK2				: out unsigned(5 downto 0);
+		DISK_RAM_ADDR  		: in  unsigned(12 downto 0);
+		DISK_RAM_DI 		: in  unsigned(7 downto 0);
+		DISK_RAM_DO    		: out unsigned(7 downto 0);
+		DISK_RAM_WE 		: in  std_logic;
+		DISK_ACT_1       	: out std_logic;
+		DISK_ACT_2       	: out std_logic;
+   		DISK_FD_WRITE_DISK  : out std_logic;    
+   		DISK_FD_READ_DISK   : out std_logic;    
+   		DISK_FD_TRACK_ADDR 	: out unsigned(13 downto 0);  -- Address for track RAM
+   		DISK_FD_DATA_IN 	: in unsigned(7 downto 0);  
+   		DISK_FD_DATA_OUT 	: out unsigned(7 downto 0) 	 
+);
 end entity;
 
 architecture behavior of tk2000 is
@@ -496,7 +511,7 @@ begin
 
 	spk_o <= speaker_s;
 
-	-- Cassete
+	-- Cassette
 	process (clock_q3_s)
 	begin
 		if rising_edge(clock_q3_s) then
@@ -508,37 +523,43 @@ begin
 	
 	cas_o <= cas_o_s;
 
-	--component disk_ii is
-	--	port (
-	--	  CLK_14M        : in std_logic;
-	--	  CLK_2M         : in std_logic;
-	--	  PHASE_ZERO     : in std_logic;
-	--	  IO_SELECT      : in std_logic;      -- e.g., C600 - C6FF ROM
-	--	  DEVICE_SELECT  : in std_logic;      -- e.g., C0E0 - C0EF I/O locations
-	--	  RESET          : in std_logic;
-	--	  A              : in unsigned(15 downto 0);
-	--	  D_IN           : in unsigned(7 downto 0);  -- From 6502
-	--	  D_OUT          : out unsigned(7 downto 0);  -- To 6502
-	--	  TRACK1         : out unsigned(5 downto 0);  -- Current track (0-34)
-	--	  TRACK2         : out unsigned(5 downto 0);  -- Current track (0-34)
-	--	  track_addr     : out unsigned(13 downto 0);
-	--	  D1_ACTIVE      : out std_logic;     -- Disk 1 motor on
-	--	  D2_ACTIVE      : out std_logic;     -- Disk 2 motor on
-	--	  ram_write_addr : in unsigned(12 downto 0);  -- Address for track RAM
-	--	  ram_di         : in unsigned(7 downto 0);  -- Data to track RAM
-	--	  ram_we         : in std_logic;              -- RAM write enable
-	  
-	--	  DISK_FD_WRITE_DISK      : out std_logic;
-	--	  DISK_FD_READ_DISK      : out std_logic;
-	--	  DISK_FD_TRACK_ADDR : out unsigned(13 downto 0);  -- Address for track RAM
-	--	  DISK_FD_DATA_IN : in unsigned(7 downto 0);
-	--	  DISK_FD_DATA_OUT : out unsigned(7 downto 0)
-	--	  );
-	--	end component;
-		
+	
+disk_ii: entity work.disk_ii
+port map (
+    CLK_14M        => clock_14_i,
+    CLK_2M         => CLK_2M,
+    PHASE_ZERO     => PHASE_ZERO,
+    IO_SELECT      => IO_SELECT(6),
+    DEVICE_SELECT  => DEVICE_SELECT(6),
+    RESET          => reset,
+    A              => ADDR,
+    D_IN           => D,
+    D_OUT          => DISK_DO,
+    TRACK1          => TRACK1,
+    TRACK2          => TRACK2,
+    TRACK_ADDR     => open,
+    D1_ACTIVE      => DISK_ACT_1,
+    D2_ACTIVE      => DISK_ACT_2,
+    ram_write_addr => DISK_RAM_ADDR,
+    ram_di         => DISK_RAM_DI,
+    ram_we         => DISK_RAM_WE,
+
+	 DISK_FD_WRITE_DISK      => DISK_FD_WRITE_DISK,
+    DISK_FD_READ_DISK      => DISK_FD_READ_DISK,
+    DISK_FD_TRACK_ADDR      => DISK_FD_TRACK_ADDR,
+    DISK_FD_DATA_IN      => DISK_FD_DATA_IN,
+    DISK_FD_DATA_OUT      => DISK_FD_DATA_OUT
+
+);
+
+signal CLK_2M, CLK_2M_D, PHASE_ZERO : std_logic;
+signal IO_SELECT, DEVICE_SELECT : std_logic_vector(7 downto 0);
+signal ADDR : unsigned(15 downto 0);
+signal D, PD: unsigned(7 downto 0);
+signal DISK_DO, PSG_DO, HDD_DO : unsigned(7 downto 0);
 
 
-	-- Debug
+-- Debug
 --
 -- +-------------+-------------+ D000
 -- |   BANCO A   |   BANCO B   |
