@@ -219,6 +219,41 @@ architecture behavior of tk2000 is
 	signal cas_o_cs_s			: std_logic;
 	signal cas_o_s				: std_logic								:= '0';
 
+	-- Disk
+	signal CLK_2M, CLK_2M_D, PHASE_ZERO : std_logic;
+	signal IO_SELECT, DEVICE_SELECT : std_logic_vector(7 downto 0);
+	signal ADDR : unsigned(15 downto 0);
+	signal D, PD: unsigned(7 downto 0);
+	signal DISK_DO, PSG_DO, HDD_DO : unsigned(7 downto 0);
+
+	component disk_ii is
+		port (
+			CLK_14M        : in std_logic;
+			CLK_2M         : in std_logic;
+			PHASE_ZERO     : in std_logic;
+			IO_SELECT      : in std_logic;      -- e.g., C600 - C6FF ROM
+			DEVICE_SELECT  : in std_logic;      -- e.g., C0E0 - C0EF I/O locations
+			RESET          : in std_logic;
+			A              : in unsigned (15 downto 0);
+			D_IN           : in unsigned ( 7 downto 0);  -- From 6502
+			D_OUT          : out unsigned( 7 downto 0);  -- To 6502
+			TRACK1         : out unsigned( 5 downto 0);  -- Current track (0-34)
+			TRACK2         : out unsigned( 5 downto 0);  -- Current track (0-34)
+			track_addr     : out unsigned(13 downto 0);
+			D1_ACTIVE      : out std_logic;     -- Disk 1 motor on
+			D2_ACTIVE      : out std_logic;     -- Disk 2 motor on
+			ram_write_addr : in unsigned (12 downto 0);  -- Address for track RAM
+			ram_di         : in unsigned ( 7 downto 0);  -- Data to track RAM
+			ram_we         : in std_logic;              -- RAM write enable
+	  
+			DISK_FD_WRITE_DISK	: out std_logic;
+			DISK_FD_READ_DISK   : out std_logic;
+		  	DISK_FD_TRACK_ADDR  : out unsigned(13 downto 0);  -- Address for track RAM
+		  	DISK_FD_DATA_IN 	: in unsigned ( 7 downto 0);
+		  	DISK_FD_DATA_OUT 	: out unsigned( 7 downto 0)
+		);
+	end component;
+
 begin
 
 	cpu: entity work.cpu6502
@@ -524,19 +559,19 @@ begin
 	cas_o <= cas_o_s;
 
 	
-disk_ii: entity work.disk_ii
+disk : component disk_ii
 port map (
     CLK_14M        => clock_14_i,
     CLK_2M         => CLK_2M,
     PHASE_ZERO     => PHASE_ZERO,
     IO_SELECT      => IO_SELECT(6),
     DEVICE_SELECT  => DEVICE_SELECT(6),
-    RESET          => reset,
+    RESET          => reset_i,
     A              => ADDR,
     D_IN           => D,
     D_OUT          => DISK_DO,
-    TRACK1          => TRACK1,
-    TRACK2          => TRACK2,
+    TRACK1         => TRACK1,
+    TRACK2         => TRACK2,
     TRACK_ADDR     => open,
     D1_ACTIVE      => DISK_ACT_1,
     D2_ACTIVE      => DISK_ACT_2,
@@ -544,20 +579,12 @@ port map (
     ram_di         => DISK_RAM_DI,
     ram_we         => DISK_RAM_WE,
 
-	 DISK_FD_WRITE_DISK      => DISK_FD_WRITE_DISK,
-    DISK_FD_READ_DISK      => DISK_FD_READ_DISK,
-    DISK_FD_TRACK_ADDR      => DISK_FD_TRACK_ADDR,
-    DISK_FD_DATA_IN      => DISK_FD_DATA_IN,
-    DISK_FD_DATA_OUT      => DISK_FD_DATA_OUT
-
+	DISK_FD_WRITE_DISK	=> DISK_FD_WRITE_DISK,
+    DISK_FD_READ_DISK	=> DISK_FD_READ_DISK,
+    DISK_FD_TRACK_ADDR	=> DISK_FD_TRACK_ADDR,
+    DISK_FD_DATA_IN		=> DISK_FD_DATA_IN,
+    DISK_FD_DATA_OUT	=> DISK_FD_DATA_OUT
 );
-
-signal CLK_2M, CLK_2M_D, PHASE_ZERO : std_logic;
-signal IO_SELECT, DEVICE_SELECT : std_logic_vector(7 downto 0);
-signal ADDR : unsigned(15 downto 0);
-signal D, PD: unsigned(7 downto 0);
-signal DISK_DO, PSG_DO, HDD_DO : unsigned(7 downto 0);
-
 
 -- Debug
 --
@@ -572,6 +599,5 @@ signal DISK_DO, PSG_DO, HDD_DO : unsigned(7 downto 0);
 -- +---------------------------+ FFFF
 --
 -- Pag. 122 manual tecnico
-
 
 end architecture;
