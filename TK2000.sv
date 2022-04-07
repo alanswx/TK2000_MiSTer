@@ -171,8 +171,6 @@ module emu
 	input         OSD_STATUS
 );
 
-///////// Default values for ports not used in this core /////////
-
 assign ADC_BUS  = 'Z;
 assign USER_OUT = '1;
 assign {UART_RTS, UART_TXD, UART_DTR} = 0;
@@ -194,8 +192,8 @@ assign LED_DISK = LED; // 0;
 assign LED_POWER = 1; // 0;
 assign BUTTONS = 0;
 
-//////////////////////////////////////////////////////////////////
 wire LED;
+assign led = fd_disk_1 | fd_disk_2;
 
 wire [1:0] ar = status[9:8];
 
@@ -225,7 +223,6 @@ wire  [1:0] buttons;
 wire [31:0] status;
 wire [10:0] ps2_key;
 wire [15:0] joy1, joy2;
-
 
 wire [31:0] sd_lba[2];
 reg   [1:0] sd_rd;
@@ -289,7 +286,6 @@ hps_io #(.CONF_STR(CONF_STR),.PS2DIV(1000),.VDNUM(2)) hps_io
 wire ps2_kbd_clk;
 wire ps2_kbd_data;
 
-///////////////////////   CLOCKS   ///////////////////////////////
 
 //wire clk_sys = clock_28_s;
 wire clock_57_s;
@@ -307,7 +303,6 @@ pll pll
     
 wire reset = RESET | status[0] | buttons[1];
 
-//////////////////////////////////////////////////////////////////
 
 wire HBlank;
 wire HSync;
@@ -446,9 +441,8 @@ wire drive_en_s;
 wire rd_pulse_s;
 
 
-
 tk2000 tk2000 (
-    .clock_14_i(clock_14_s),
+	.clock_14_i(clock_14_s),
     .reset_i(reset_s),
     .CPU_WAIT(cpu_wait_fdd),
     // RAM
@@ -505,21 +499,38 @@ tk2000 tk2000 (
     .per_data_from_i(per_data_from_s),
     .per_data_to_o(per_data_to_s),
     // Debug
-    .D_cpu_pc_o(D_cpu_pc_s));
+    .D_cpu_pc_o(D_cpu_pc_s),
+	
+	// Disk
+	.TRACK1(track1),
+	.TRACK2(track2),
+	.DISK_RAM_ADDR({track_sec, sd_buff_addr}),
+	.DISK_RAM_DI(sd_buff_dout),
+	.DISK_RAM_DO(/*sd_buff_din[0]*/),
+	.DISK_RAM_WE(sd_buff_wr & sd_ack[0]),
+	
+	.DISK_ACT_1(fd_disk_1),
+	.DISK_ACT_2(fd_disk_2),
+	
+   	.DISK_FD_READ_DISK(fd_read_disk),
+   	.DISK_FD_WRITE_DISK(fd_write_disk),
+   	.DISK_FD_TRACK_ADDR(fd_track_addr),
+   	.DISK_FD_DATA_IN(fd_data_in),
+   	.DISK_FD_DATA_OUT(fd_data_do)
+);
    
  // Keyboard
-  keyboard #(
-      .clkfreq_g(28000)) 
-  kb(
-      .clock_i(clock_28_s), //  --clock_28_s,
-    .reset_i(por_reset_s),
-    .ps2_clk_io(ps2_kbd_clk),
+keyboard #(.clkfreq_g(28000)) kb (
+  	.clock_i	(clock_28_s), //  --clock_28_s,
+    .reset_i	(por_reset_s),
+    .ps2_clk_io	(ps2_kbd_clk),
     .ps2_data_io(ps2_kbd_data),
-    .rows_i(kbd_rows_s),
-    .row_ctrl_i(kbd_ctrl_s),
-    .cols_o(kbd_cols_s),
-    .FKeys_o(FKeys_s),
-    .osd_o(osd_s));
+    .rows_i		(kbd_rows_s),
+    .row_ctrl_i	(kbd_ctrl_s),
+    .cols_o		(kbd_cols_s),
+    .FKeys_o	(FKeys_s),
+    .osd_o		(osd_s)
+);
 
 	 
   always @(posedge clock_28_s) begin
@@ -537,55 +548,34 @@ tk2000 tk2000 (
     // 7 mhz
   end
     
-
-
-  // ROM
-  tk2000_rom rom(
-      .clock(clock_28_s),
+// ROM
+tk2000_rom rom (
+    .clock	(clock_28_s),
     .address(rom_addr_s),
-    .q(rom_data_from_s));
+    .q		(rom_data_from_s)
+);
 
 // 1 is monochrome
 wire 	   COLOR_LINE_CONTROL = video_color_s |  (status[6] |  status[5]);  // Color or B&W mode
 
- // VGA
-  vga_controller_appleii vga(
+// VGA
+vga_controller_appleii vga (
     .CLK_14M(clock_14_s),
     .VIDEO(video_bit_s),
     .COLOR_LINE(COLOR_LINE_CONTROL),
-	 .SCREEN_MODE(status[6:5]),
+	.SCREEN_MODE(status[6:5]),
     .HBL(video_hbl_s),
     .VBL(video_vbl_s),
     .VGA_HS(video_hsync_n_s),
     .VGA_VS(video_vsync_n_s),
-	 .VGA_HBL(HBlank),
-	 .VGA_VBL(VBlank),
+	.VGA_HBL(HBlank),
+	.VGA_VBL(VBlank),
 	 
     .VGA_R(video_r_s),
     .VGA_G(video_g_s),
-    .VGA_B(video_b_s));
-/*
-  // VGA
-  vga_controller vga(
-    .clock_28_i(clock_28_s),
-    .video_i(video_bit_s),
-    .color_i(video_color_s),
-    .hbl_i(video_hbl_s),
-    .vbl_i(video_vbl_s),
-    .ld194_i(video_ld194_s),
-    .color_type_i(~status[11]),
-    .vga_hs_n_o(video_hsync_n_s),
-    .vga_vs_n_o(video_vsync_n_s),
-    .vga_blank_n_o(video_blank_s),
-	 .VGA_HBL(HBlank),
-	 .VGA_VBL(VBlank),
-	 
-    .vga_r_o(video_r_s),
-    .vga_g_o(video_g_s),
-    .vga_b_o(video_b_s),
-    .vga_odd_line_o(odd_line_s),
-    .color_index(color_index));
-*/	
+    .VGA_B(video_b_s)
+);
+	
 	assign VGA_HS	= video_hsync_n_s;
 	assign VGA_VS	= video_vsync_n_s;
 	assign VGA_R	= video_r_s;
@@ -594,36 +584,6 @@ wire 	   COLOR_LINE_CONTROL = video_color_s |  (status[6] |  status[5]);  // Col
 //  assign VGA_DE = (video_blank_s);
    assign VGA_DE =  ~(VBlank | HBlank);
 
- //disk_ii disk (
- //   .CLK_14M(clock_14_s),
- //   .CLK_2M(clock_2M_s),
- //   .PRE_PHASE_ZERO(phi0_s),
-	 
-//    .IO_SELECT(~per_iosel_n_s),
-//    .DEVICE_SELECT(~per_devsel_n_s),
-	 
-//    .RESET(reset_s),
-//    .A(per_addr_s),
-//    .D_IN(per_data_to_s),
-//    .D_OUT(per_data_from_s),
-	 
-	 
-//    .TRACK(track),
-//    .TRACK_ADDR(track_addr_s),
-	 
-//    .D1_ACTIVE(disk1_en_s),
-//    .D2_ACTIVE(disk2_en_s),
-//    .ram_write_addr({track_sec, sd_buff_addr}),
-//    .ram_di(sd_buff_dout),
-//    .ram_we(sd_buff_wr & sd_ack[0]),
-	 
-//    .step_sound_o(step_sound_s),
-    //------------------------------------------------------------------------------
-//    .motor_phase_o(motor_phase_s),
-//    .drive_en_o(drive_en_s),
-//    .rd_pulse_o(rd_pulse_s)
-//);
-	 
 assign sd_buff_din[1] = 0;
 assign      sd_lba[1] = 0;
 assign      sd_rd[1] = 0;
@@ -695,8 +655,6 @@ wire joy2_p6_i = drive_en_s;
 */
       
   assign scanlines_en_s = 2'b00;
-    
-
 
  // Glue Logic
   // In the Apple ][, this was a 555 timer
@@ -722,27 +680,17 @@ wire joy2_p6_i = drive_en_s;
     end
   end
 
+dpram2  #( .addr_width_g(16),.data_width_g(8)) ram (
+	.address_a	(ram_addr),
+	.clock_a	(clock_28_s),
+	.clock_b	(~clock_2M_s),
+	.data_a		(ram_data),
+	.q_a		(ram_data_from_s),
+	.wren_a		(ram_we)
+);
 
-
-  dpram2  #( .addr_width_g(16),.data_width_g(8))
-  ram (
-	.address_a(ram_addr),
-	.clock_a(clock_28_s),
-	.clock_b(~clock_2M_s),
-	.data_a(ram_data),
-	.q_a(ram_data_from_s),
-	.wren_a(ram_we)
-  );
-  
-
-
-  assign ram_we = por_reset_s == 1'b0 ? ram_we_s : 1'b1;
-  assign ram_data = por_reset_s == 1'b0 ? ram_data_to_s : 8'b00000000;
-  assign ram_addr = por_reset_s == 1'b0 ? ram_addr_s: 16'h3F4;//std_logic_vector(to_unsigned(1012,ram_addr'length)); -- $3F4
-
-
-    
-
-  
+assign ram_we = por_reset_s == 1'b0 ? ram_we_s : 1'b1;
+assign ram_data = por_reset_s == 1'b0 ? ram_data_to_s : 8'b00000000;
+assign ram_addr = por_reset_s == 1'b0 ? ram_addr_s: 16'h3F4;//std_logic_vector(to_unsigned(1012,ram_addr'length)); -- $3F4
 
 endmodule

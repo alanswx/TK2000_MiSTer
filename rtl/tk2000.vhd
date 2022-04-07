@@ -558,33 +558,33 @@ begin
 	
 	cas_o <= cas_o_s;
 
-	
-disk : component disk_ii
-port map (
-    CLK_14M        => clock_14_i,
-    CLK_2M         => CLK_2M,
-    PHASE_ZERO     => PHASE_ZERO,
-    IO_SELECT      => IO_SELECT(6),
-    DEVICE_SELECT  => DEVICE_SELECT(6),
-    RESET          => reset_i,
-    A              => ADDR,
-    D_IN           => D,
-    D_OUT          => DISK_DO,
-    TRACK1         => TRACK1,
-    TRACK2         => TRACK2,
-    TRACK_ADDR     => open,
-    D1_ACTIVE      => DISK_ACT_1,
-    D2_ACTIVE      => DISK_ACT_2,
-    ram_write_addr => DISK_RAM_ADDR,
-    ram_di         => DISK_RAM_DI,
-    ram_we         => DISK_RAM_WE,
+	-- Disk
+	disk : component disk_ii
+	port map (
+    	CLK_14M        => clock_14_i,
+    	CLK_2M         => CLK_2M,
+    	PHASE_ZERO     => PHASE_ZERO,
+    	IO_SELECT      => IO_SELECT(6),
+    	DEVICE_SELECT  => DEVICE_SELECT(6),
+    	RESET          => reset_i,
+    	A              => ADDR,
+    	D_IN           => D,
+    	D_OUT          => DISK_DO,
+    	TRACK1         => TRACK1,
+    	TRACK2         => TRACK2,
+    	TRACK_ADDR     => open,
+    	D1_ACTIVE      => DISK_ACT_1,
+    	D2_ACTIVE      => DISK_ACT_2,
+    	ram_write_addr => DISK_RAM_ADDR,
+    	ram_di         => DISK_RAM_DI,
+    	ram_we         => DISK_RAM_WE,
 
-	DISK_FD_WRITE_DISK	=> DISK_FD_WRITE_DISK,
-    DISK_FD_READ_DISK	=> DISK_FD_READ_DISK,
-    DISK_FD_TRACK_ADDR	=> DISK_FD_TRACK_ADDR,
-    DISK_FD_DATA_IN		=> DISK_FD_DATA_IN,
-    DISK_FD_DATA_OUT	=> DISK_FD_DATA_OUT
-);
+		DISK_FD_WRITE_DISK	=> DISK_FD_WRITE_DISK,
+    	DISK_FD_READ_DISK	=> DISK_FD_READ_DISK,
+    	DISK_FD_TRACK_ADDR	=> DISK_FD_TRACK_ADDR,
+    	DISK_FD_DATA_IN		=> DISK_FD_DATA_IN,
+    	DISK_FD_DATA_OUT	=> DISK_FD_DATA_OUT
+	);
 
 -- Debug
 --
