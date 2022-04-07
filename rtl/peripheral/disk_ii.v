@@ -432,14 +432,19 @@ module disk_ii(
     assign ram_do = DISK_FD_DATA_IN;
     assign DISK_FD_DATA_OUT = floppy_write_data_out;
     
-    
-   rom #(8,8,"../ROMS/TK2000/disk_ii.hex") diskrom (
+       disk_ii_rom  diskrom (
+		.addr(A[7:0]),
+		.clk(CLK_14M),
+		.dout(rom_dout));
+
+		`ifdef OFF
+		rom #(8,8,"../../ROMS/TK2000/disk_ii.hex") diskrom (
            .clock(CLK_14M),
            .ce(1'b1),
            .a(A[7:0]),
            .data_out(rom_dout)
    );
- 
+`endif 
     assign read_disk = (DEVICE_SELECT == 1'b1 & A[3:0] == 4'hC & q7 == 1'b0) ? 1'b1 : 		// C08C
                        1'b0;
     assign write_disk = (DEVICE_SELECT == 1'b1 & A[3:0] == 4'hC & q7 == 1'b1) ? 1'b1 : 		// C08C

@@ -211,7 +211,8 @@ localparam CONF_STR = {
 	"O56,Display,Color,B&W,Green,Amber;",
 	"-;",
 	"S0,NIBDSKDO PO ;",
-	"OA,Dis Rom,On,Off;",
+	"S1,NIBDSKDO PO ;",
+	"OA,Disk Rom,On,Off;",
 	"OB,Color Mode,On,Off;",
 	"-;",
 	"R0,Reset;",
@@ -498,24 +499,10 @@ tk2000 tk2000 (
     .per_data_from_i(per_data_from_s),
     .per_data_to_o(per_data_to_s),
     // Debug
-    .D_cpu_pc_o(D_cpu_pc_s),
+    .D_cpu_pc_o(D_cpu_pc_s)
 	
-	// Disk
-	.TRACK1(track1),
-	.TRACK2(track2),
-	.DISK_RAM_ADDR({track_sec, sd_buff_addr}),
-	.DISK_RAM_DI(sd_buff_dout),
-	.DISK_RAM_DO(/*sd_buff_din[0]*/),
-	.DISK_RAM_WE(sd_buff_wr & sd_ack[0]),
+
 	
-	.DISK_ACT_1(fd_disk_1),
-	.DISK_ACT_2(fd_disk_2),
-	
-   	.DISK_FD_READ_DISK(fd_read_disk),
-   	.DISK_FD_WRITE_DISK(fd_write_disk),
-   	.DISK_FD_TRACK_ADDR(fd_track_addr),
-   	.DISK_FD_DATA_IN(fd_data_in),
-   	.DISK_FD_DATA_OUT(fd_data_do)
 );
    
  // Keyboard
@@ -587,14 +574,45 @@ vga_controller_appleii vga (
 
 
 
-assign sd_rd = { sd_rd_fdd_b,sd_rd_hd,sd_rd_fdd_a };
-assign sd_wr = { sd_wr_fdd_b,sd_wr_hd,sd_wr_fdd_a };
+assign sd_rd = { sd_rd_fdd_b,sd_rd_fdd_a };
+assign sd_wr = { sd_wr_fdd_b,sd_wr_fdd_a };
 wire sd_rd_fdd_a;
 wire sd_wr_fdd_a;
 wire sd_rd_fdd_b;
 wire sd_wr_fdd_b;
-reg sd_rd_hd;
-reg sd_wr_hd;
+
+
+disk_ii disk(
+    .CLK_14M(clock_14_s),
+    .CLK_2M(clock_2M_s),
+    .PHASE_ZERO(phi0_s),
+	 
+    .IO_SELECT(~per_iosel_n_s),
+    .DEVICE_SELECT(~per_devsel_n_s),
+	 
+    .RESET(reset_s),
+    .A(per_addr_s),
+    .D_IN(per_data_to_s),
+    .D_OUT(per_data_from_s),
+	 
+	 
+    .TRACK1(track1),
+    .TRACK2(track2),
+	 
+    .D1_ACTIVE(fd_disk_1),
+    .D2_ACTIVE(fd_disk_2),
+    .ram_write_addr({track_sec, sd_buff_addr}),
+    .ram_di(sd_buff_dout),
+    .ram_we(sd_buff_wr & sd_ack[0]),
+    .DISK_FD_READ_DISK(fd_read_disk),
+   .DISK_FD_WRITE_DISK(fd_write_disk),
+   .DISK_FD_TRACK_ADDR(fd_track_addr),
+   .DISK_FD_DATA_IN(fd_data_in),
+   .DISK_FD_DATA_OUT(fd_data_do)
+
+    );
+
+
 
 
 wire  [5:0] track1;
@@ -622,7 +640,7 @@ wire fd_disk_2;
 track_loader #(.drive_num('d0)) track_loader_a
 (
     .clk(clk_sys),
-    .reset(dd_reset),
+    .reset(reset_s),
     .active(fd_disk_1),
     .lba_fdd(sd_lba[0]),
     .track(track1),
@@ -641,7 +659,28 @@ track_loader #(.drive_num('d0)) track_loader_a
     .fd_data_do(fd_data_do),
     .fd_data_in(fd_data_in1)
 );
-
+track_loader #(.drive_num('d1)) track_loader_b
+(
+    .clk(clk_sys),
+    .reset(reset_s),
+    .active(fd_disk_2),
+    .lba_fdd(sd_lba[1]),
+    .track(track2),
+    .img_mounted(img_mounted[1]),
+    .img_size(img_size),
+    .cpu_wait_fdd(cpu_wait_fdd2),
+    .sd_ack(sd_ack[1]),
+    .sd_rd(sd_rd_fdd_b),
+    .sd_wr(sd_wr_fdd_b),
+    .sd_buff_addr(sd_buff_addr),
+    .sd_buff_wr(sd_buff_wr),
+    .sd_buff_dout(sd_buff_dout),
+    .sd_buff_din(sd_buff_din[1]),
+    .fd_track_addr(fd_track_addr),
+    .fd_write_disk(fd_write_disk),
+    .fd_data_do(fd_data_do),
+    .fd_data_in(fd_data_in2)
+);
 `ifdef OFF
 
 assign      sd_lba[0] = lba_fdd;
