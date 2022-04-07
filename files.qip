@@ -3,7 +3,7 @@ set_global_assignment -name QIP_FILE "rtl/syn-multicore/pll1.qip"
 set_global_assignment -name VHDL_FILE rtl/tk2000.vhd
 set_global_assignment -name VHDL_FILE rtl/timing_generator.vhd
 set_global_assignment -name VHDL_FILE rtl/cpu/cpu6502.vhd
-set_global_assignment -name VHDL_FILE rtl/RAM/dpram.vhd
+#set_global_assignment -name VHDL_FILE rtl/RAM/dpram.vhd
 set_global_assignment -name QIP_FILE rtl/ROM/tk2000_rom.qip
 set_global_assignment -name VHDL_FILE rtl/shared/Audio_DAC.vhd
 set_global_assignment -name VHDL_FILE rtl/shared/dac.vhd
@@ -11,9 +11,9 @@ set_global_assignment -name VHDL_FILE rtl/shared/debounce.vhd
 set_global_assignment -name VHDL_FILE rtl/shared/keymaps.vhd
 set_global_assignment -name VHDL_FILE rtl/shared/keyboard.vhd
 set_global_assignment -name VHDL_FILE rtl/shared/ps2_iobase.vhd
-#set_global_assignment -name VHDL_FILE rtl/peripheral/disk_ii.vhd
 set_global_assignment -name VHDL_FILE rtl/peripheral/disk_ii_rom.vhd
 set_global_assignment -name VERILOG_FILE rtl/peripheral/disk_ii.v
+set_global_assignment -name VERILOG_FILE rtl/peripheral/track_loader.v
 set_global_assignment -name VERILOG_FILE rtl/rom.v
 set_global_assignment -name VHDL_FILE rtl/peripheral/spi_controller.vhd
 set_global_assignment -name VHDL_FILE rtl/peripheral/image_control.vhd

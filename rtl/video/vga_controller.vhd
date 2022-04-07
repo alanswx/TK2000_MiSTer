@@ -178,13 +178,13 @@ begin
 		data_width_g	=> 1
 	)
 	port map (
-		clk_a_i	=> clock_28_i,
-		addr_a_i	=> std_logic_vector(ram_write_addr_s),
-		data_a_i	=> data_in_s,
-		we_i		=> ram_we_s,
-		clk_b_i	=> clock_28_i,
-		addr_b_i	=> std_logic_vector(ram_read_addr_s),
-		data_b_o	=> data_out_s
+		clock_a	=> clock_28_i,
+		address_a	=> std_logic_vector(ram_write_addr_s),
+		data_a	=> data_in_s,
+		wren_a		=> ram_we_s,
+		clock_b	=> clock_28_i,
+		address_b	=> std_logic_vector(ram_read_addr_s),
+		data_b	=> data_out_s
 	);
 
   delay_hbl : process (clock_28_i)
