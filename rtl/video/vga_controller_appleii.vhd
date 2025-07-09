@@ -54,9 +54,19 @@ architecture rtl of vga_controller_appleii is
 	type basis_color is array(0 to 3) of unsigned(7 downto 0);
 
 	-- TK2000 (green, blue, cyan, red)
-	constant basis_r : basis_color := ( X"2F", X"40", X"6F", X"90" );
-	constant basis_g : basis_color := ( X"BC", X"2C", X"E8", X"17" );  
-	constant basis_b : basis_color := ( X"1A", X"A5", X"BF", X"40" );	
+	--constant basis_r : basis_color := ( X"2F", X"40", X"6F", X"90" );
+	--constant basis_g : basis_color := ( X"BC", X"2C", X"E8", X"17" );  
+	--constant basis_b : basis_color := ( X"1A", X"A5", X"BF", X"40" );	
+	-- Apple 2        (vermelho, azul, verde, verde-escuro)
+	--  			   red,      blue, green, dark green	
+	-- TRY 1, pretty good, looks like apple ii:
+	--constant basis_r : basis_color := ( X"88", X"38", X"07", X"38" );
+	--constant basis_g : basis_color := ( X"22", X"24", X"67", X"52" );
+	--constant basis_b : basis_color := ( X"2C", X"A0", X"2C", X"07" );	
+	-- TRY 2: from another emulator maybe:
+	constant basis_r : basis_color := ( X"50", X"37", X"08", X"70" );
+	constant basis_g : basis_color := ( X"38", X"94", X"2C", X"07" );
+	constant basis_b : basis_color := ( X"38", X"10", X"B0", X"07" );	
 
 	signal shift_reg : unsigned(5 downto 0);  -- Last six pixels
 
@@ -139,25 +149,25 @@ begin
 					when "11" => r := X"FF"; g := X"80"; b := X"01"; -- amber 
 				end case;
 			end if;
-		elsif shift_reg(0) = shift_reg(4) and shift_reg(5) = shift_reg(1) then
+		elsif shift_reg(0) = shift_reg(4) and shift_reg(1) = shift_reg(5) then
 		 
 			-- Tint of adjacent pixels is consistent : display the color
-			if shift_reg(3) = '1' then
+			if shift_reg(1) = '1' then
 				r := r + basis_r(to_integer(hcount + 1));
 				g := g + basis_g(to_integer(hcount + 1));
 				b := b + basis_b(to_integer(hcount + 1));
 			end if;
-			if shift_reg(4) = '1' then
+			if shift_reg(2) = '1' then
 				r := r + basis_r(to_integer(hcount + 2));
 				g := g + basis_g(to_integer(hcount + 2));
 				b := b + basis_b(to_integer(hcount + 2));
 			end if;
-			if shift_reg(1) = '1' then
+			if shift_reg(3) = '1' then
 				r := r + basis_r(to_integer(hcount + 3));
 				g := g + basis_g(to_integer(hcount + 3));
 				b := b + basis_b(to_integer(hcount + 3));
 			end if;
-			if shift_reg(2) = '1' then
+			if shift_reg(4) = '1' then
 				r := r + basis_r(to_integer(hcount));
 				g := g + basis_g(to_integer(hcount));
 				b := b + basis_b(to_integer(hcount));
