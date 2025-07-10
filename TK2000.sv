@@ -512,8 +512,20 @@ tk2000 tk2000 (
 );
    
  // Keyboard
-keyboard #(.clkfreq_g(28000)) kb (
+/*keyboard #(.clkfreq_g(28000)) kb (
   	.clock_i	(clock_28_s), //  --clock_28_s,
+    .reset_i	(por_reset_s),
+    .ps2_clk_io	(ps2_kbd_clk),
+    .ps2_data_io(ps2_kbd_data),
+    .rows_i		(kbd_rows_s),
+    .row_ctrl_i	(kbd_ctrl_s),
+    .cols_o		(kbd_cols_s),
+    .FKeys_o	(FKeys_s),
+    .osd_o		(osd_s)
+);*/
+
+keyboard #(.clkfreq_g(7000)) kb (
+  	.clock_i	(clk_kbd_s), //  --clock_28_s,
     .reset_i	(por_reset_s),
     .ps2_clk_io	(ps2_kbd_clk),
     .ps2_data_io(ps2_kbd_data),
@@ -530,7 +542,7 @@ keyboard #(.clkfreq_g(28000)) kb (
     if((kbd_rows_s[6] == 1'b1 && joy1_up_i == 1'b0) || (kbd_rows_s[5] == 1'b1 && joy1_down_i == 1'b0) || (kbd_rows_s[4] == 1'b1 && joy1_right_i == 1'b0) || (kbd_rows_s[3] == 1'b1 && joy1_left_i == 1'b0)) begin
       kbd_joy_s <= kbd_joy_s | 6'b000001;
     end
-    if((kbd_rows_s[7] == 1'b1 && joy1_p6_i == 1'b0) || (kbd_rows_s[7] == 1'b1 && joy1_p9_i == 1'b0)) begin
+    if((kbd_rows_s[7] == 1'b1 && joy1_p6_i == 1'b0) || (kbd_rows_s[6] == 1'b1 && joy1_p9_i == 1'b0)) begin
       kbd_joy_s <= kbd_joy_s | 6'b010000;
     end
  
